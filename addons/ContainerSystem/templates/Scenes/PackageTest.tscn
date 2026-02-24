@@ -1,0 +1,7 @@
+[gd_scene load_steps=2 format=3 uid="uid://bgim7b3u3aepa"]
+
+[ext_resource type="Script" uid="uid://des4y4yyy103b" path="res://Scripts/test_item_container.gd" id="1_clbvo"]
+
+[node name="PackageTest" type="Node"]
+script = ExtResource("1_clbvo")
+size = 1

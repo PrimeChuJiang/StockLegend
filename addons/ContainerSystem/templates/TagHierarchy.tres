@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="TagHierarchy" load_steps=3 format=3 uid="uid://2nwvanlehx1c"]
+
+[ext_resource type="Script" path="res://addons/ContainerSystem/core/TagHierarchy.gd" id="1_hierarchy"]
+[ext_resource type="Script" uid="uid://ckx0cxgjxyq1l" path="res://addons/ContainerSystem/core/Tag.gd" id="1_mktce"]
+
+[resource]
+script = ExtResource("1_hierarchy")
+root_tags = Array[ExtResource("1_mktce")]([])

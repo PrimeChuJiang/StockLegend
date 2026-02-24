@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="ItemDataMap" load_steps=4 format=3 uid="uid://bc0xm3winws63"]
+
+[ext_resource type="Script" uid="uid://o4akd0wb6em7" path="res://addons/ContainerSystem/core/ItemData.gd" id="1_taexq"]
+[ext_resource type="Script" uid="uid://bkkomsw0k43v4" path="res://addons/ContainerSystem/core/ItemDataMap.gd" id="2_f34hf"]
+[ext_resource type="Resource" uid="uid://8ur3yilusuwx" path="res://addons/ContainerSystem/templates/Items/apple.tres" id="2_kidq0"]
+
+[resource]
+script = ExtResource("2_f34hf")
+item_data_map = Array[ExtResource("1_taexq")]([ExtResource("2_kidq0")])
+metadata/_custom_type_script = "uid://bkkomsw0k43v4"

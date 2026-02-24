@@ -1,0 +1,7 @@
+[gd_resource type="Resource" script_class="AppleBehaviour" load_steps=2 format=3 uid="uid://b55i5bciuchhg"]
+
+[ext_resource type="Script" uid="uid://cy3vu133j1h3o" path="res://addons/ContainerSystem/templates/Scripts/Behaviour/AppleBehaviour.gd" id="1_l14u1"]
+
+[resource]
+script = ExtResource("1_l14u1")
+metadata/_custom_type_script = "uid://cy3vu133j1h3o"
