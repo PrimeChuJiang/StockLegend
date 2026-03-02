@@ -7,6 +7,14 @@ extends Node
 ## 区域字典，键为 Enums.Zone 枚举值，值为 ItemContainer 节点
 var _containers: Dictionary = {}
 
+@export var default_zone_size: Dictionary = {
+	"DECK": 40,
+	"HAND": 10,
+	"FIELD": 10,
+	"DISCARD": 40,
+	"EXHAUST": 40
+}
+
 
 ## 为每个 Zone 创建一个 ItemContainer 子节点并初始化。
 func _ready() -> void:
@@ -104,9 +112,9 @@ func get_all_cards() -> Array[CardItem]:
 ## 获取各区域的默认容量。
 func _get_default_size(zone: Enums.Zone) -> int:
 	match zone:
-		Enums.Zone.DECK: return 40
-		Enums.Zone.HAND: return 10
-		Enums.Zone.FIELD: return 10
-		Enums.Zone.DISCARD: return 40
-		Enums.Zone.EXHAUST: return 40
+		Enums.Zone.DECK: return default_zone_size["DECK"]
+		Enums.Zone.HAND: return default_zone_size["HAND"]
+		Enums.Zone.FIELD: return default_zone_size["FIELD"]
+		Enums.Zone.DISCARD: return default_zone_size["DISCARD"]
+		Enums.Zone.EXHAUST: return default_zone_size["EXHAUST"]
 	return 20
