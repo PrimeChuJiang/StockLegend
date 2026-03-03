@@ -71,7 +71,7 @@ func _setup_player() -> void:
 func _setup_deck() -> void:
 	# --- Normal card: Fireball (deal 8 damage, cost 2) ---
 	var fireball_data := CardItemData.new()
-	fireball_data.id = 1
+	fireball_data.id = "fireball"
 	fireball_data.name = "Fireball"
 	fireball_data.max_stack = 1
 	fireball_data.card_type = Enums.CardType.NORMAL
@@ -85,7 +85,7 @@ func _setup_deck() -> void:
 
 	# --- Instant card: Quick Heal (heal 5, cost 1) ---
 	var heal_data := CardItemData.new()
-	heal_data.id = 2
+	heal_data.id = "heal"
 	heal_data.name = "Quick Heal"
 	heal_data.max_stack = 1
 	heal_data.card_type = Enums.CardType.INSTANT
@@ -99,7 +99,7 @@ func _setup_deck() -> void:
 
 	# --- Field card: War Banner (draw 1 card each turn end, cost 3) ---
 	var banner_data := CardItemData.new()
-	banner_data.id = 3
+	banner_data.id = "banner"
 	banner_data.name = "War Banner"
 	banner_data.max_stack = 1
 	banner_data.card_type = Enums.CardType.FIELD
@@ -113,7 +113,7 @@ func _setup_deck() -> void:
 
 	# --- Extra card for modifier test ---
 	var shield_data := CardItemData.new()
-	shield_data.id = 4
+	shield_data.id = "shield"
 	shield_data.name = "Magic Shield"
 	shield_data.max_stack = 1
 	shield_data.card_type = Enums.CardType.NORMAL
@@ -123,7 +123,7 @@ func _setup_deck() -> void:
 
 	# --- Extra filler card ---
 	var filler_data := CardItemData.new()
-	filler_data.id = 5
+	filler_data.id = "filler"
 	filler_data.name = "Filler Card"
 	filler_data.max_stack = 1
 	filler_data.card_type = Enums.CardType.NORMAL

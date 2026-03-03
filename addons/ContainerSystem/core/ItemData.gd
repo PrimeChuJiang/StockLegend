@@ -4,7 +4,7 @@ extends Resource
 class_name ItemData
 
 # 物品ID
-@export var id : int = 0
+@export var id : StringName = ""
 
 # 物品名称
 @export var name : String = ""

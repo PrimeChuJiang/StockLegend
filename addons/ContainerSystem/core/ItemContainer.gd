@@ -58,7 +58,7 @@ func initialize(_size : int = 0, _container_name : String = "", _description : S
 # ---------------
 
 # 添加位置到ID位置映射
-func _add_to_id_pos_map(item_id: int, pos: int) -> void:
+func _add_to_id_pos_map(item_id: StringName, pos: int) -> void:
 	if not item_id_pos_map.has(item_id):
 		item_id_pos_map[item_id] = [] as Array[int]
 	var pos_list: Array[int] = item_id_pos_map[item_id]
@@ -66,7 +66,7 @@ func _add_to_id_pos_map(item_id: int, pos: int) -> void:
 		pos_list.append(pos)
 
 # 从ID位置映射中移除位置
-func _remove_from_id_pos_map(item_id: int, pos: int) -> void:
+func _remove_from_id_pos_map(item_id: StringName, pos: int) -> void:
 	if item_id_pos_map.has(item_id):
 		var pos_list: Array[int] = item_id_pos_map[item_id]
 		pos_list.erase(pos)
@@ -334,7 +334,7 @@ func find_available_positions(item_id: int, max_stack: int = -1) -> Dictionary:
 
 # 查找指定物品id的第一个可用位置（优先返回未满堆叠的位置）
 # 参数 add_count: 要添加的数量，用于判断位置是否能容纳
-func find_position_by_id(item_id: int, max_stack: int = -1, add_count: int = 1) -> int:
+func find_position_by_id(item_id: StringName, max_stack: int = -1, add_count: int = 1) -> int:
 	# 先查找未满堆叠的位置 O(n)
 	if item_id_pos_map.has(item_id):
 		for pos in item_id_pos_map[item_id]:
@@ -549,7 +549,7 @@ func can_remove_item(index: int = -1, num: int = 1) -> int:
 # 计算按ID移除物品的分配方案
 # 返回 { "code": int, "distribution": Array }
 # distribution 格式: [{ "index": int, "count": int }]
-func calculate_remove_distribution(item_id: int, num: int = 1) -> Dictionary:
+func calculate_remove_distribution(item_id: StringName, num: int = 1) -> Dictionary:
 	var result = { "code": CAN_REMOVE_ITEM_SUCCESS, "distribution": [] }
 	
 	if not item_id_pos_map.has(item_id):
@@ -609,7 +609,7 @@ func remove_item_in_position(index: int = -1, num: int = 1) -> int:
 
 # 按物品ID删除指定数量的物品（不需要指定位置）
 # 会自动从该ID的多个堆叠组中移除，直到移除足够数量
-func remove_item_by_id(item_id: int, num: int = 1) -> int:
+func remove_item_by_id(item_id: StringName, num: int = 1) -> int:
 	var remove_result = calculate_remove_distribution(item_id, num)
 	if remove_result["code"] != CAN_REMOVE_ITEM_SUCCESS:
 		return remove_result["code"]
@@ -627,7 +627,7 @@ func remove_item(item: Item, num: int = 1) -> int:
 	return remove_item_by_id(item.get_id(), num)
 
 # 检查是否能够按ID移除指定数量的物品
-func can_remove_item_by_id(item_id: int, num: int = 1) -> int:
+func can_remove_item_by_id(item_id: StringName, num: int = 1) -> int:
 	var result = calculate_remove_distribution(item_id, num)
 	return result["code"]
 

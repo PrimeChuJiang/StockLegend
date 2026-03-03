@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="Tag" load_steps=3 format=3 uid="uid://ct8ohyr3jk713"]
+
+[ext_resource type="Script" uid="uid://ckx0cxgjxyq1l" path="res://addons/ContainerSystem/core/Tag.gd" id="1_b8h4y"]
+[ext_resource type="Resource" uid="uid://becxtefpkq8mk" path="res://addons/ContainerSystem/templates/Tags/Industry.tres" id="2_ycnig"]
+
+[resource]
+script = ExtResource("1_b8h4y")
+name = "ENERGY"
+parent_tag = ExtResource("2_ycnig")
+child_tags = Array[ExtResource("1_b8h4y")]([])

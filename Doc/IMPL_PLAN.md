@@ -150,7 +150,7 @@ enum ModifierOp { ADD, MULTIPLY, SET }
 
 ---
 
-### 4.2 Data Resources — 四个纯数据类
+### 4.2 Data Resources — 四个纯数据类------已解决
 
 #### `material_card_def.gd`
 ```gdscript
@@ -229,7 +229,7 @@ extends Resource
 
 ---
 
-### 4.3 `sentiment_modifier.gd` — 情绪修正器
+### 4.3 `sentiment_modifier.gd` — 情绪修正器------已解决
 
 这是一个纯数据对象，替代旧的 `Modifier`。
 

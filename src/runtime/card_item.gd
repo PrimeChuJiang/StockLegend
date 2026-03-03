@@ -3,11 +3,8 @@
 class_name CardItem
 extends Item
 
-## 自增 ID 计数器，确保每个实例拥有唯一标识
-static var _next_id: int = 0
-
 ## 运行时唯一标识，由工厂方法自动分配
-var card_instance_id: int
+var card_instance_id: StringName
 ## 当前附加的属性修改器列表
 var modifiers: Array[Modifier] = []
 ## 自由扩展数据容器，供子类或外部系统存储额外运行时数据
@@ -16,9 +13,7 @@ var extra_data: Dictionary = {}
 
 func _init(_data: CardItemData, _container: ItemContainer, _index: int):
 	super._init(_data, _container, _index, 1)
-	card_instance_id = _next_id
-	_next_id += 1
-
+	card_instance_id = _data.id
 
 ## 静态工厂方法：根据 CardItemData.card_type 自动创建对应子类实例。
 ## 这是创建卡牌实例的唯一推荐入口。

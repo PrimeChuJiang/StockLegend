@@ -56,7 +56,7 @@ func _to_string():
 	return "Item(id: %d, name: %s, stack_count: %d)" % [data.id, data.name, stack_count]
 
 # 快捷获取静态数据的封装（语法糖，调用更简洁）
-func get_id() -> int: return data.id
+func get_id() -> StringName: return data.id
 func get_name() -> String: return data.name
 func get_icon() -> Texture2D: return data.image
 func get_max_stack() -> int: return data.max_stack
