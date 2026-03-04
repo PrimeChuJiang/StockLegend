@@ -140,9 +140,9 @@ func register_custom_project_settings() -> void:
 	}
 	ProjectSettings.add_property_info(property_info)
 
-	# 新增：标签层级设置
-	var hierarchy_path = "res://addons/ContainerSystem/templates/TagHierarchy.tres"
-	ProjectSettings.set_setting(TAG_HIERARCHY_SETTING_PATH, hierarchy_path)
+	# 新增：标签层级设置 - 仅在未设置时初始化，避免覆盖用户配置
+	if not ProjectSettings.has_setting(TAG_HIERARCHY_SETTING_PATH):
+		ProjectSettings.set_setting(TAG_HIERARCHY_SETTING_PATH, "")
 	ProjectSettings.add_property_info({
 		"name": TAG_HIERARCHY_SETTING_PATH,
 		"type": TYPE_STRING,

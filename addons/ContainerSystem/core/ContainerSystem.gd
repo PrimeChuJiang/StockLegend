@@ -23,7 +23,7 @@ func _ready():
 		print("ContainerSystem: _ready: 物品数据地图加载成功")
 
 # 通过ID获取物品模板数据
-func get_item_data_by_id(id : int) -> ItemData:
+func get_item_data_by_id(id : StringName) -> ItemData:
 	if _item_map_id.has(id):
 		return _item_map_id[id]
 	else :

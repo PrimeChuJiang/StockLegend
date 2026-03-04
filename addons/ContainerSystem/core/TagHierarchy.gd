@@ -54,12 +54,13 @@ func initialize_paths() -> void:
 	for root in root_tags:
 		_init_tag_paths(root)
 
-func _init_tag_paths(tag: Tag) -> void:
+func _init_tag_paths(tag: Tag, parent: Tag = null) -> void:
 	if tag == null:
 		return
+	tag.parent_tag = parent
 	tag._update_path()
 	for child in tag.child_tags:
-		_init_tag_paths(child)
+		_init_tag_paths(child, tag)
 
 # 获取标签数量
 func get_tag_count() -> int:

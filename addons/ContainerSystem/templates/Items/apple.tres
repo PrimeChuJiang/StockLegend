@@ -8,7 +8,7 @@
 
 [resource]
 script = ExtResource("4_kcje3")
-id = 0
+id = &"apple"
 name = "苹果"
 tags = Array[ExtResource("2_iyraj")]([ExtResource("3_iyraj")])
 description = "这是苹果"

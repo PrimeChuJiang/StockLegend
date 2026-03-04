@@ -8,7 +8,7 @@ const SUCCESS = 200
 
 # 物品列表
 var item_list : Array[Item] = []
-var item_id_pos_map : Dictionary = {} # int -> Array[int]，存储每个物品ID对应的位置列表
+var item_id_pos_map : Dictionary = {} # StringName -> Array[int]，存储每个物品ID对应的位置列表
 var item_empty_pos_map : Array[int] = [] # 空位置列表
 
 # 容器可添加的物品标签
@@ -309,7 +309,7 @@ func _check_item_tag(item: Item) -> int:
 # 查找指定物品id的可用位置信息
 # 返回格式：{ "stackable": Array[Dictionary], "empty": Array[int] }
 # stackable 数组元素格式: { "index": int, "available_space": int }
-func find_available_positions(item_id: int, max_stack: int = -1) -> Dictionary:
+func find_available_positions(item_id: StringName, max_stack: int = -1) -> Dictionary:
 	var result = { "stackable": [], "empty": [] as Array[int] }
 	
 	# 查找未满堆叠的位置 O(n) n为该ID物品的堆叠组数
@@ -690,7 +690,7 @@ func has_item(item: Item, index: int = -1, check_num: bool = false) -> int:
 		return HAS_ITEM_SUCCESS
 
 # 按ID检查容器内是否有指定物品及数量
-func has_item_by_id(item_id: int, num: int = 1) -> int:
+func has_item_by_id(item_id: StringName, num: int = 1) -> int:
 	if not item_id_pos_map.has(item_id):
 		push_error("ItemContainer: has_item_by_id: 容器", self, "内没有id为", item_id, "的物品")
 		return HAS_ITEM_NOT_FOUND_ERROR
@@ -707,7 +707,7 @@ func has_item_by_id(item_id: int, num: int = 1) -> int:
 	return HAS_ITEM_SUCCESS
 
 # 获取容器内指定ID物品的总数量 O(n)，n为该ID的堆叠组数
-func get_item_count_by_id(item_id: int) -> int:
+func get_item_count_by_id(item_id: StringName) -> int:
 	if not item_id_pos_map.has(item_id):
 		return 0
 	
@@ -740,7 +740,7 @@ func get_empty_count() -> int:
 	return item_empty_pos_map.size()
 
 # 获取容器内指定ID物品所在的所有位置 O(1)
-func get_positions_by_id(item_id: int) -> Array[int]:
+func get_positions_by_id(item_id: StringName) -> Array[int]:
 	if item_id_pos_map.has(item_id):
 		return item_id_pos_map[item_id].duplicate()
 	return [] as Array[int]

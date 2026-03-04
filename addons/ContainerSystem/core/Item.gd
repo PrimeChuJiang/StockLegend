@@ -53,7 +53,7 @@ func _triger_behaviour(character_from : Node, character_to : Node, num : int = -
 
 # 重写 to_string 方法，方便打印调试
 func _to_string():
-	return "Item(id: %d, name: %s, stack_count: %d)" % [data.id, data.name, stack_count]
+	return "Item(id: %s, name: %s, stack_count: %d)" % [data.id, data.name, stack_count]
 
 # 快捷获取静态数据的封装（语法糖，调用更简洁）
 func get_id() -> StringName: return data.id

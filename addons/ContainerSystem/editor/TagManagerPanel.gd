@@ -8,6 +8,9 @@ var add_child_btn: Button
 var delete_btn: Button
 var hierarchy: TagHierarchy
 var hierarchy_path: String
+var setup_container: VBoxContainer
+
+const DEFAULT_HIERARCHY_PATH: String = "res://addons/ContainerSystem/templates/TagHierarchy.tres"
 
 var selected_item: TreeItem = null
 var selected_tag: Tag = null
@@ -18,9 +21,15 @@ func _init() -> void:
 
 func _ready() -> void:
 	custom_minimum_size = Vector2(200, 300)
-	_setup_ui()
-	_load_hierarchy()
-	_populate_tree()
+	hierarchy_path = ProjectSettings.get_setting(
+		"container_system/tag_hierarchy", ""
+	)
+	if _needs_setup():
+		_show_setup_ui()
+	else:
+		_setup_ui()
+		_load_hierarchy()
+		_populate_tree()
 
 func _setup_ui() -> void:
 	var main_vbox = VBoxContainer.new()
@@ -71,11 +80,96 @@ func _setup_ui() -> void:
 
 	add_child(main_vbox)
 
+# ---- 初始化配置 ----
+
+func _needs_setup() -> bool:
+	return hierarchy_path.is_empty() or hierarchy_path == DEFAULT_HIERARCHY_PATH
+
+func _show_setup_ui() -> void:
+	setup_container = VBoxContainer.new()
+	setup_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	setup_container.size_flags_vertical = Control.SIZE_EXPAND_FILL
+
+	var title_label = Label.new()
+	title_label.text = "Tag Manager"
+	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	setup_container.add_child(title_label)
+
+	var spacer_top = Control.new()
+	spacer_top.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	setup_container.add_child(spacer_top)
+
+	var desc_label = Label.new()
+	desc_label.text = "尚未配置 Tag 存储文件。\n请点击下方按钮选择存储路径并创建配置文件。"
+	desc_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	setup_container.add_child(desc_label)
+
+	var spacer_mid = Control.new()
+	spacer_mid.custom_minimum_size.y = 10
+	setup_container.add_child(spacer_mid)
+
+	var setup_btn = Button.new()
+	setup_btn.text = "创建 Tag 配置文件"
+	setup_btn.pressed.connect(_on_setup_pressed)
+	setup_container.add_child(setup_btn)
+
+	var spacer_bottom = Control.new()
+	spacer_bottom.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	setup_container.add_child(spacer_bottom)
+
+	add_child(setup_container)
+
+func _on_setup_pressed() -> void:
+	var dialog = EditorFileDialog.new()
+	dialog.file_mode = EditorFileDialog.FILE_MODE_SAVE_FILE
+	dialog.title = "选择 Tag 配置文件保存位置"
+	dialog.add_filter("*.tres", "Godot Resource")
+	dialog.current_file = "TagHierarchy.tres"
+	dialog.access = EditorFileDialog.ACCESS_RESOURCES
+	dialog.file_selected.connect(_on_setup_file_selected.bind(dialog))
+	dialog.canceled.connect(func(): dialog.queue_free())
+	EditorInterface.get_base_control().add_child(dialog)
+	dialog.popup_centered(Vector2i(800, 600))
+
+func _on_setup_file_selected(path: String, dialog: EditorFileDialog) -> void:
+	dialog.queue_free()
+	# 更新路径
+	hierarchy_path = path
+	hierarchy = TagHierarchy.new()
+	# 确保目录存在
+	var dir = path.get_base_dir()
+	if not DirAccess.dir_exists_absolute(dir):
+		DirAccess.make_dir_recursive_absolute(dir)
+	# 保存 TagHierarchy 文件
+	hierarchy.take_over_path(path)
+	var err = ResourceSaver.save(hierarchy, path)
+	if err != OK:
+		push_error("TagManagerPanel: 创建 TagHierarchy 失败，错误码: " + str(err))
+		return
+	# 保存路径到项目设置
+	ProjectSettings.set_setting("container_system/tag_hierarchy", path)
+	ProjectSettings.save()
+	# 切换到正常界面
+	_switch_to_normal_ui()
+
+func _switch_to_normal_ui() -> void:
+	if setup_container and is_instance_valid(setup_container):
+		remove_child(setup_container)
+		setup_container.free()
+		setup_container = null
+	_setup_ui()
+	_populate_tree()
+	_scan_filesystem()
+
+# ---- 数据加载 ----
+
 func _load_hierarchy() -> void:
 	hierarchy_path = ProjectSettings.get_setting(
-		"container_system/tag_hierarchy",
-		"res://addons/ContainerSystem/templates/TagHierarchy.tres"
+		"container_system/tag_hierarchy", ""
 	)
+	if hierarchy_path.is_empty():
+		return
 	if ResourceLoader.exists(hierarchy_path):
 		hierarchy = load(hierarchy_path) as TagHierarchy
 		if hierarchy:
@@ -84,7 +178,11 @@ func _load_hierarchy() -> void:
 			_ensure_tag_files()
 	if not hierarchy:
 		hierarchy = TagHierarchy.new()
-		_save_hierarchy()
+		# 仅在文件不存在时才保存，避免覆盖加载失败的已有文件
+		if not FileAccess.file_exists(hierarchy_path):
+			_save_hierarchy()
+		else:
+			push_warning("TagManagerPanel: 加载 TagHierarchy 失败，文件可能已损坏: " + hierarchy_path)
 
 func _save_hierarchy() -> void:
 	if hierarchy == null:
@@ -282,5 +380,17 @@ func _on_delete_pressed() -> void:
 
 # 刷新面板 (外部调用)
 func refresh() -> void:
-	_load_hierarchy()
-	_populate_tree()
+	hierarchy_path = ProjectSettings.get_setting(
+		"container_system/tag_hierarchy", ""
+	)
+	# 清除现有界面
+	for child in get_children():
+		child.queue_free()
+	tag_tree = null
+	setup_container = null
+	if _needs_setup():
+		_show_setup_ui()
+	else:
+		_setup_ui()
+		_load_hierarchy()
+		_populate_tree()

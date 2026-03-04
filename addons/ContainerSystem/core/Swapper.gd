@@ -191,7 +191,7 @@ static func move_item(src: ItemContainer, dst: ItemContainer, item: Item, num: i
 # num: 移动数量
 # dst_index: 目标位置，-1表示自动分配
 # 返回错误码
-static func move_by_id(src: ItemContainer, dst: ItemContainer, item_id: int, num: int = 1, dst_index: int = -1) -> int:
+static func move_by_id(src: ItemContainer, dst: ItemContainer, item_id: StringName, num: int = 1, dst_index: int = -1) -> int:
 	if src == null:
 		push_error("Swapper: move_by_id: 源容器为空")
 		return ERROR_SRC_CONTAINER_NULL
@@ -382,7 +382,7 @@ static func merge_stack(container: ItemContainer, from_index: int, to_index: int
 # 批量操作结构
 # ops: Array[Dictionary]
 # 每个Dictionary格式：
-# { "item_id": int, "num": int, "dst_index": int (可选) }
+# { "item_id": StringName, "num": int, "dst_index": int (可选) }
 # 返回: Array[int] 每个操作的结果码
 static func move_batch(src: ItemContainer, dst: ItemContainer, ops: Array) -> Array[int]:
 	var results: Array[int] = []
@@ -398,11 +398,11 @@ static func move_batch(src: ItemContainer, dst: ItemContainer, ops: Array) -> Ar
 		return results
 	
 	for op in ops:
-		var item_id: int = op.get("item_id", -1)
+		var item_id: StringName = op.get("item_id", &"")
 		var num: int = op.get("num", 1)
 		var dst_index: int = op.get("dst_index", -1)
 		
-		if item_id == -1:
+		if item_id.is_empty():
 			results.append(ERROR_ITEM_NULL)
 			continue
 		
@@ -418,7 +418,7 @@ static func move_batch(src: ItemContainer, dst: ItemContainer, ops: Array) -> Ar
 # 模拟移动操作，返回预期结果但不实际执行
 # 返回: { "code": int, "src_changes": Array, "dst_changes": Array, "remaining": int }
 # src_changes/dst_changes 格式: [{ "index": int, "old_count": int, "new_count": int }]
-static func simulate_move(src: ItemContainer, dst: ItemContainer, item_id: int, num: int = 1, dst_index: int = -1) -> Dictionary:
+static func simulate_move(src: ItemContainer, dst: ItemContainer, item_id: StringName, num: int = 1, dst_index: int = -1) -> Dictionary:
 	var result = {
 		"code": SUCCESS,
 		"src_changes": [],
@@ -500,11 +500,11 @@ static func simulate_batch(src: ItemContainer, dst: ItemContainer, ops: Array) -
 	}
 	
 	for op in ops:
-		var item_id: int = op.get("item_id", -1)
+		var item_id: StringName = op.get("item_id", &"")
 		var num: int = op.get("num", 1)
 		var dst_index: int = op.get("dst_index", -1)
 		
-		if item_id == -1:
+		if item_id.is_empty():
 			result["codes"].append(ERROR_ITEM_NULL)
 			result["details"].append({})
 			continue

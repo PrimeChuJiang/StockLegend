@@ -11,8 +11,8 @@ class_name Tag
 		if not _initializing:
 			_update_path()
 
-# 父标签引用
-@export var parent_tag: Tag = null
+# 父标签引用 (不序列化，避免与 child_tags 形成循环引用；由 TagHierarchy.initialize_paths 重建)
+var parent_tag: Tag = null
 
 # 子标签列表
 @export var child_tags: Array[Tag] = []

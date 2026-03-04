@@ -16,14 +16,14 @@ config/icon="res://icon.svg"
 
 [autoload]
 
-GameBus="*res://src/autoload/game_bus.gd"
+GameBus="*res://Scripts/autoload/game_bus.gd"
 ItemContainerSystem="*res://addons/ContainerSystem/core/ContainerSystem.gd"
 TagManager="*res://addons/ContainerSystem/core/TagManager.gd"
 
 [container_system]
 
 item_data_map="res://addons/ContainerSystem/templates/ItemDataMapTemplate.tres"
-tag_hierarchy="res://addons/ContainerSystem/templates/TagHierarchy.tres"
+tag_hierarchy="res://Tags/TagHierarchy.tres"
 
 [editor_plugins]
 

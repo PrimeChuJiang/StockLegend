@@ -271,7 +271,7 @@ func tick() -> bool:
 
 ---
 
-### 4.4 `stock.gd` — 股票运行时状态
+### 4.4 `stock.gd` — 股票运行时状态------已完成
 
 ```gdscript
 class_name Stock

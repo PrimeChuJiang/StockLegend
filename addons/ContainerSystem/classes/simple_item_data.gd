@@ -5,12 +5,12 @@ extends RefCounted
 class_name SimpleItemData
 
 class SingleSimpleItemData:
-    var id : int = 0
+    var id : StringName = &""
     var count : int = 1
 
     func _to_string() -> String:
         var name : String = ItemContainerSystem.get_item_data_by_id(id).name
-        return "SingleSimpleItemData(id: %d, name: %s, count: %d)" % [id, name, count]
+        return "SingleSimpleItemData(id: %s, name: %s, count: %d)" % [id, name, count]
 
 var item_save_datas : Array[SingleSimpleItemData] = []
 

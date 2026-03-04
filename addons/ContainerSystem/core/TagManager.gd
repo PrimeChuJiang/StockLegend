@@ -13,10 +13,9 @@ func _ready() -> void:
 
 func _load_tags() -> void:
 	var path = ProjectSettings.get_setting(
-		"container_system/tag_hierarchy",
-		"res://addons/ContainerSystem/templates/TagHierarchy.tres"
+		"container_system/tag_hierarchy", ""
 	)
-	if ResourceLoader.exists(path):
+	if not path.is_empty() and ResourceLoader.exists(path):
 		_hierarchy = load(path) as TagHierarchy
 		if _hierarchy:
 			_hierarchy.initialize_paths()
