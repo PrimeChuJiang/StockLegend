@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="Tag" load_steps=7 format=3 uid="uid://buxt4y0t3qxqf"]
+
+[ext_resource type="Script" uid="uid://ckx0cxgjxyq1l" path="res://addons/ContainerSystem/core/Tag.gd" id="1_npjw1"]
+[ext_resource type="Resource" uid="uid://d3qsos3ws4ftv" path="res://Tags/Tags/Industry.Tech.tres" id="2_2fny7"]
+[ext_resource type="Resource" uid="uid://bgngt0pkyqjb0" path="res://Tags/Tags/Industry.Finance.tres" id="3_t7wgi"]
+[ext_resource type="Resource" uid="uid://bcsjxpj23egm5" path="res://Tags/Tags/Industry.Energy.tres" id="4_78j6x"]
+[ext_resource type="Resource" uid="uid://d34mr2gvtjde2" path="res://Tags/Tags/Industry.Medical.tres" id="5_5urkl"]
+[ext_resource type="Resource" uid="uid://xu2vucehvqvr" path="res://Tags/Tags/Industry.Macro.tres" id="6_83k8v"]
+
+[resource]
+script = ExtResource("1_npjw1")
+name = "Industry"
+child_tags = Array[ExtResource("1_npjw1")]([ExtResource("2_2fny7"), ExtResource("3_t7wgi"), ExtResource("4_78j6x"), ExtResource("5_5urkl"), ExtResource("6_83k8v")])

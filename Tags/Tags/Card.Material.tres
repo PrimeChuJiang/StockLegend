@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="Tag" load_steps=6 format=3 uid="uid://bla21b6u2umcy"]
+
+[ext_resource type="Script" uid="uid://ckx0cxgjxyq1l" path="res://addons/ContainerSystem/core/Tag.gd" id="1_krou7"]
+[ext_resource type="Resource" uid="uid://e6xqn7yhupue" path="res://Tags/Tags/Card.Material.Data.tres" id="2_tnpmr"]
+[ext_resource type="Resource" uid="uid://b665yt8rnmhdo" path="res://Tags/Tags/Card.Material.Scoop.tres" id="3_gqk5a"]
+[ext_resource type="Resource" uid="uid://dh0v8ngffv8gl" path="res://Tags/Tags/Card.Material.Rumor.tres" id="4_1j5i1"]
+[ext_resource type="Resource" uid="uid://d3arblnefuse2" path="res://Tags/Tags/Card.Material.Opinion.tres" id="5_5n5gm"]
+
+[resource]
+script = ExtResource("1_krou7")
+name = "Material"
+child_tags = Array[ExtResource("1_krou7")]([ExtResource("2_tnpmr"), ExtResource("3_gqk5a"), ExtResource("4_1j5i1"), ExtResource("5_5n5gm")])

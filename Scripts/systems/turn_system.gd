@@ -18,12 +18,15 @@ var turn_number: int = 0
 ## 当前正在执行的阶段
 var current_phase: Enums.Phase
 ## 阶段执行序列，可通过 insert_phase_before/after 和 remove_phase 动态修改
+## MARKET_OPEN, GATHER, WRITING, PUBLISH, MARKET_REACT, TRADE, SETTLEMENT 
 var phase_sequence: Array[Enums.Phase] = [
-	Enums.Phase.TURN_START,
-	Enums.Phase.DRAW,
-	Enums.Phase.MAIN,
-	Enums.Phase.TURN_END,
-	Enums.Phase.CLEANUP,
+	Enums.Phase.MARKET_OPEN,
+	Enums.Phase.GATHER,
+	Enums.Phase.WRITING,
+	Enums.Phase.PUBLISH,
+	Enums.Phase.MARKET_REACT,
+	Enums.Phase.TRADE,
+	Enums.Phase.SETTLEMENT,
 ]
 
 ## 区域管理器引用，由外部注入
@@ -72,31 +75,32 @@ func play_card(card: CardItem, player: PlayerState) -> bool:
 ## DRAW：抽一张牌；MAIN：等待玩家操作完毕；TURN_END：结算场地牌效果；CLEANUP：清理过期修改器。
 func _process_phase(phase: Enums.Phase) -> void:
 	match phase:
-		Enums.Phase.DRAW:
-			zone_manager.draw_card()
-		Enums.Phase.MAIN:
-			GameBus.main_phase_entered.emit()
-			await GameBus.main_phase_finished
-		Enums.Phase.TURN_END:
-			_resolve_field_effects()
-		Enums.Phase.CLEANUP:
-			_cleanup_modifiers()
+		# Enums.Phase.DRAW:
+		# 	zone_manager.draw_card()
+		# Enums.Phase.MAIN:
+		# 	GameBus.main_phase_entered.emit()
+		# 	await GameBus.main_phase_finished
+		# Enums.Phase.TURN_END:
+		# 	_resolve_field_effects()
+		# Enums.Phase.CLEANUP:
+		# 	_cleanup_modifiers()
+		pass
 
 
-## 结算所有场地区域卡牌的 ON_TURN_END 效果。
-## 先复制场地卡牌列表再遍历，避免效果执行过程中修改列表导致迭代异常。
-func _resolve_field_effects() -> void:
-	var ctx := _build_context()
-	var field_cards := zone_manager.get_cards_in_zone(Enums.Zone.FIELD).duplicate()
-	for card: CardItem in field_cards:
-		effect_resolver.resolve_effects(card, Enums.EffectTrigger.ON_TURN_END, ctx)
+# ## 结算所有场地区域卡牌的 ON_TURN_END 效果。
+# ## 先复制场地卡牌列表再遍历，避免效果执行过程中修改列表导致迭代异常。
+# func _resolve_field_effects() -> void:
+# 	var ctx := _build_context()
+# 	var field_cards := zone_manager.get_cards_in_zone(Enums.Zone.FIELD).duplicate()
+# 	for card: CardItem in field_cards:
+# 		effect_resolver.resolve_effects(card, Enums.EffectTrigger.ON_TURN_END, ctx)
 
 
-## 对所有区域的所有卡牌执行修改器 tick，移除已过期的修改器。
-func _cleanup_modifiers() -> void:
-	var all_cards := zone_manager.get_all_cards()
-	for card: CardItem in all_cards:
-		card.tick_modifiers()
+# ## 对所有区域的所有卡牌执行修改器 tick，移除已过期的修改器。
+# func _cleanup_modifiers() -> void:
+# 	var all_cards := zone_manager.get_all_cards()
+# 	for card: CardItem in all_cards:
+# 		card.tick_modifiers()
 
 
 ## 构建上下文字典，传递给 card.execute(ctx) 和 effect handler。

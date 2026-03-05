@@ -25,28 +25,28 @@ func register_effect(id: StringName, handler: Callable) -> void:
 ## 结算卡牌上所有匹配指定触发时机的效果。
 ## 遍历 card.get_card_data().effects，筛选 trigger 匹配的效果，执行对应的 handler。
 ## 对于指向性卡牌，会先通过 target_selector 选择目标后再执行效果。
-func resolve_effects(card: CardItem, trigger: Enums.EffectTrigger, ctx: Dictionary) -> void:
-	var card_data := card.get_card_data()
-	for effect_def: EffectDef in card_data.effects:
-		if effect_def.trigger != trigger:
-			continue
-		var handler: Callable = _handlers.get(effect_def.effect_id, Callable())
-		if not handler.is_valid():
-			push_warning("No handler registered for effect: %s" % effect_def.effect_id)
-			continue
-		var target: Variant = null
-		if card_data.target_type != Enums.TargetType.NONE:
-			var candidates := _get_candidates(card, card_data.target_type, ctx)
-			target = await target_selector.select_target(card, card_data.target_type, candidates)
-		ctx["target"] = target
-		handler.call(card, effect_def, ctx)
+# func resolve_effects(card: CardItem, trigger: Enums.EffectTrigger, ctx: Dictionary) -> void:
+# 	var card_data := card.get_card_data()
+# 	for effect_def: EffectDef in card_data.effects:
+# 		if effect_def.trigger != trigger:
+# 			continue
+# 		var handler: Callable = _handlers.get(effect_def.effect_id, Callable())
+# 		if not handler.is_valid():
+# 			push_warning("No handler registered for effect: %s" % effect_def.effect_id)
+# 			continue
+# 		var target: Variant = null
+# 		if card_data.target_type != Enums.TargetType.NONE:
+# 			var candidates := _get_candidates(card, card_data.target_type, ctx)
+# 			target = await target_selector.select_target(card, card_data.target_type, candidates)
+# 		ctx["target"] = target
+# 		handler.call(card, effect_def, ctx)
 
 
 ## 根据目标类型获取候选目标列表。
 ## 当前实现：返回场地区域所有卡牌。后续可根据玩家/敌人区分进行细化。
-func _get_candidates(_card: CardItem, _target_type: Enums.TargetType, ctx: Dictionary) -> Array:
-	var zm: CardZoneManager = ctx.get("zone_manager")
-	return zm.get_cards_in_zone(Enums.Zone.FIELD)
+# func _get_candidates(_card: CardItem, _target_type: Enums.TargetType, ctx: Dictionary) -> Array:
+# 	var zm: CardZoneManager = ctx.get("zone_manager")
+	# return zm.get_cards_in_zone(Enums.Zone.FIELD)
 
 
 ## 注册所有内置效果处理函数。

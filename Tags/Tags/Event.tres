@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="Tag" load_steps=5 format=3 uid="uid://btebg3xonxyqf"]
+
+[ext_resource type="Script" uid="uid://ckx0cxgjxyq1l" path="res://addons/ContainerSystem/core/Tag.gd" id="1_6tkd7"]
+[ext_resource type="Resource" uid="uid://dyp6br44nms5i" path="res://Tags/Tags/Event.Macro.tres" id="2_4aj7l"]
+[ext_resource type="Resource" uid="uid://3msmbpjd3agr" path="res://Tags/Tags/Event.Industry.tres" id="3_3tawb"]
+[ext_resource type="Resource" path="res://Tags/Tags/Event.Company.tres" id="4_t4v1p"]
+
+[resource]
+script = ExtResource("1_6tkd7")
+name = "Event"
+child_tags = Array[ExtResource("1_6tkd7")]([ExtResource("2_4aj7l"), ExtResource("3_3tawb"), ExtResource("4_t4v1p")])

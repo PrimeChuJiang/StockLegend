@@ -1,8 +1,11 @@
-[gd_resource type="Resource" script_class="TagHierarchy" load_steps=3 format=3 uid="uid://bia3gxy7hhoie"]
+[gd_resource type="Resource" script_class="TagHierarchy" load_steps=6 format=3 uid="uid://bia3gxy7hhoie"]
 
 [ext_resource type="Script" uid="uid://ckx0cxgjxyq1l" path="res://addons/ContainerSystem/core/Tag.gd" id="1_tl5r6"]
 [ext_resource type="Script" uid="uid://c33ak48jpgbgi" path="res://addons/ContainerSystem/core/TagHierarchy.gd" id="2_d5hb7"]
+[ext_resource type="Resource" uid="uid://berpg3fpmmfgr" path="res://Tags/Tags/Card.tres" id="2_oxqje"]
+[ext_resource type="Resource" uid="uid://buxt4y0t3qxqf" path="res://Tags/Tags/Industry.tres" id="3_oxqje"]
+[ext_resource type="Resource" uid="uid://btebg3xonxyqf" path="res://Tags/Tags/Event.tres" id="4_0xij4"]
 
 [resource]
 script = ExtResource("2_d5hb7")
-root_tags = Array[ExtResource("1_tl5r6")]([])
+root_tags = Array[ExtResource("1_tl5r6")]([ExtResource("2_oxqje"), ExtResource("3_oxqje"), ExtResource("4_0xij4")])

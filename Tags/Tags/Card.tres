@@ -1,0 +1,10 @@
+[gd_resource type="Resource" script_class="Tag" load_steps=4 format=3 uid="uid://berpg3fpmmfgr"]
+
+[ext_resource type="Script" uid="uid://ckx0cxgjxyq1l" path="res://addons/ContainerSystem/core/Tag.gd" id="1_wbdbc"]
+[ext_resource type="Resource" uid="uid://bla21b6u2umcy" path="res://Tags/Tags/Card.Material.tres" id="2_qgw3a"]
+[ext_resource type="Resource" uid="uid://oem7cmrnvcr0" path="res://Tags/Tags/Card.WritingMethod.tres" id="3_5bjyt"]
+
+[resource]
+script = ExtResource("1_wbdbc")
+name = "Card"
+child_tags = Array[ExtResource("1_wbdbc")]([ExtResource("2_qgw3a"), ExtResource("3_5bjyt")])

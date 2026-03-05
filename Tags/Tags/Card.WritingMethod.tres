@@ -1,0 +1,11 @@
+[gd_resource type="Resource" script_class="Tag" load_steps=5 format=3 uid="uid://oem7cmrnvcr0"]
+
+[ext_resource type="Script" uid="uid://ckx0cxgjxyq1l" path="res://addons/ContainerSystem/core/Tag.gd" id="1_2qn21"]
+[ext_resource type="Resource" uid="uid://iv4eahpqlh15" path="res://Tags/Tags/Card.WritingMethod.Common.tres" id="2_w4lok"]
+[ext_resource type="Resource" uid="uid://0edx184cd25b" path="res://Tags/Tags/Card.WritingMethod.Uncommon.tres" id="3_kt5o8"]
+[ext_resource type="Resource" uid="uid://bveokbvs6ikct" path="res://Tags/Tags/Card.WritingMethod.Rare.tres" id="4_0hh7h"]
+
+[resource]
+script = ExtResource("1_2qn21")
+name = "WritingMethod"
+child_tags = Array[ExtResource("1_2qn21")]([ExtResource("2_w4lok"), ExtResource("3_kt5o8"), ExtResource("4_0hh7h")])
