@@ -1,20 +1,23 @@
-## 环境卡牌定义，继承自插件的 ItemData
+## 环境事件卡定义，继承自插件的 ItemData。
+## 描述一个市场效果"是什么"：情绪强度、持续时间、影响范围。
+## 不包含任何调度信息（何时出现、叫什么名字）——那是 ScheduleEventConfig 的职责。
+##
 ## 注意：
 ## - tier（MACRO/INDUSTRY/COMPANY）通过 tags 中的 Event.* 标签表达
 ## - target_industry 通过 tags 中的 Industry.* 标签表达
-## - id / name / description 使用 ItemData 已有字段
+## - id / name / description / image 使用 ItemData 已有字段
+## - name 为揭示后的卡牌正式名称（如"央行加息"）
 class_name EnviromentCardData
 extends ItemData
 
-## 日程表内显示的名字
-@export var preview_name : String = ""
-## 目标股票，当tier值为COMPANY时使用
-@export var target_company : StringName = &""
-## 情感修饰符，值为正表示利好，值为负表示利空
-@export var sentiment_modifier : int
-## 持续回合数
-@export var duration : int
-## 环境牌来源
-@export var source_type : Enums.EventSourceType
-## 是否可被引用为临时素材卡
-@export var can_be_referenced : bool
+## 目标公司股票 ID，仅当 tier = COMPANY 时有效，其余留空
+@export var target_company: StringName = &""
+
+## 情绪修改值：正数利好，负数利空
+@export var sentiment_modifier: int = 0
+
+## 效果持续回合数
+@export var duration: int = 1
+
+## 是否允许玩家将此事件引用为临时素材卡
+@export var can_be_referenced: bool = false

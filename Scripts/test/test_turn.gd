@@ -35,6 +35,8 @@ func _ready() -> void:
 	_setup_actors()
 	turn_manager.start_game()
 
+## ── 测试日程构建 ──────────────────────────────────────────────────────
+
 ## 创建测试用的素材卡和写作方法卡数据对象（不需要 ItemContainer）。
 func _build_test_cards() -> void:
 	_mat_expose = MaterialCardData.new()
@@ -96,17 +98,86 @@ func _connect_signals() -> void:
 		_log("    方法: %s" % _method_names(article.method_cards))
 		_log("    结果: %s" % article.get_summary()))
 
+	GameBus.events_showed.connect(func(turn_start: int, turn_end: int, cfg_dic: Dictionary) -> void:
+		_log("  [color=orange]📋 日程预告：[/color]")
+		
+		for turn_index in range(turn_start, turn_end) :
+			if cfg_dic.has(turn_index):
+				for cfg in cfg_dic[turn_index]:
+					_log("    · [color=orange]第 %d 回合： 预告内容：「%s」[/color]" % [turn_index, cfg.preview_name])
+			else :
+				_log("    · [color=orange]第 %d 回合：无日程事件[/color]" % turn_index)
+			turn_index += 1
+		)
+
+	GameBus.event_revealed.connect(func(cfg: ScheduleEventConfig) -> void:
+		_log("  [color=orange]📋 日程揭示：「%s」→ 触发 %d 张环境牌[/color]" % [
+			cfg.reveal_name, cfg.event_cards.size()]))
+
+	GameBus.breaking_event_triggered.connect(func(cfg: ScheduleEventConfig) -> void:
+		_log("  [color=red]⚡ 突发事件：「%s」[/color]" % cfg.reveal_name))
+
 	gather_button.pressed.connect(_on_gather_pressed)
 	craft_button.pressed.connect(_on_craft_pressed)
 	end_turn_button.pressed.connect(_on_end_turn_pressed)
+
+func _build_test_schedule() -> ScheduleData:
+	## 环境牌：央行加息（宏观利空）
+	var env_rate_hike := EnviromentCardData.new()
+	env_rate_hike.name = "央行加息"
+	env_rate_hike.sentiment_modifier = -3
+	env_rate_hike.duration = 2
+
+	## 环境牌：AI政策利好（行业利好）
+	var env_ai_policy := EnviromentCardData.new()
+	env_ai_policy.name = "AI产业政策落地"
+	env_ai_policy.sentiment_modifier = 4
+	env_ai_policy.duration = 1
+
+	## 日程事件 A：宏观消息（权重高，第1回合起可出现）
+	var cfg_macro := ScheduleEventConfig.new()
+	cfg_macro.preview_name = "宏观消息"
+	cfg_macro.reveal_name = "央行政策发布"
+	cfg_macro.event_cards = [env_rate_hike]
+	cfg_macro.weight = 2.0
+	cfg_macro.earliest_turn = 1
+
+	## 日程事件 B：行业动态（第2回合起可出现）
+	var cfg_industry := ScheduleEventConfig.new()
+	cfg_industry.preview_name = "行业动态"
+	cfg_industry.reveal_name = "科技行业报告"
+	cfg_industry.event_cards = [env_ai_policy]
+	cfg_industry.weight = 1.0
+	cfg_industry.earliest_turn = 2
+
+	## 突发事件候选：黑天鹅
+	var env_black_swan := EnviromentCardData.new()
+	env_black_swan.name = "黑天鹅事件"
+	env_black_swan.sentiment_modifier = -5
+	env_black_swan.duration = 3
+
+	var cfg_breaking := ScheduleEventConfig.new()
+	cfg_breaking.preview_name = "突发消息"
+	cfg_breaking.reveal_name = "重大突发事件"
+	cfg_breaking.event_cards = [env_black_swan]
+	cfg_breaking.weight = 1.0
+
+	## 用 ScheduleManager 生成本局日程
+	var mgr := ScheduleManager.new()
+	mgr.scheduled_pool = [cfg_macro, cfg_industry]
+	mgr.breaking_pool = [cfg_breaking]
+	mgr.game_turns = 5
+	mgr.breaking_chance = 0.3
+	return mgr.generate()
 
 func _setup_actors() -> void:
 	_player_state = PlayerState.new()
 	_world_start_actor = WorldStartActor.new()
 	_player_actor = PlayerActor.new(_player_state)
 
+	var schedule := _build_test_schedule()
 	turn_manager.actors = [_world_start_actor, _player_actor]
-	turn_manager.setup({"scene_tree": get_tree()})
+	turn_manager.setup({"scene_tree": get_tree(), "schedule": schedule})
 
 ## ── 按钮事件 ──────────────────────────────────────────────────────────
 

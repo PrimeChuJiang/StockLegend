@@ -21,8 +21,6 @@ enum EffectTrigger { ON_PLAY, ON_TURN_END, ON_FIELD_ENTER, ON_FIELD_EXIT, ON_DIS
 enum Bias { BULLISH, BERISH, NEUTRAL }
 ## 环境牌影响层级：宏观 / 产业 / 公司
 enum EventTier { MACRO, INDUSTRY, COMPANY }
-## 环境牌来源类型：计划表内事件 / 突发事件
-enum EventSourceType { SCHEDULED, BREAKING }
 ## 发表渠道：自媒体 / 主流媒体 / 匿名论坛 / 付费推广
 enum Channel { SELF_MEDIA, MAINSTREAM, ANONYMOUS, PAID_PROMOTION }
 ## 股票波动类型：低波动 / 中波动 / 高波动

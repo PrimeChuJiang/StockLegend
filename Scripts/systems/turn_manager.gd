@@ -3,8 +3,8 @@
 ## 行动者顺序即行动顺序，默认为：WorldStartActor → PlayerActor → （未来）AIActor → WorldEndActor。
 ##
 ## 使用方式：
-##   turn_manager.actors = [world_actor, player_actor]
-##   turn_manager.setup(ctx)
+##   turn_manager.actors = [world_start_actor, player_actor]
+##   turn_manager.setup({"scene_tree": get_tree(), "schedule": my_schedule})
 ##   turn_manager.start_game()
 class_name TurnManager
 extends Node
@@ -15,22 +15,27 @@ var turn_number: int = 0
 ## 行动者列表，按行动顺序排列。由外部（场景脚本）在 start_game() 前赋值。
 var actors: Array[Actor] = []
 
-## 上下文字典，透传给每个行动者的 execute_turn()
+## 上下文字典，透传给每个行动者的 execute_turn()。
+## 每回合开始前自动更新 turn_number 字段。
 var _ctx: Dictionary = {}
 
-## 设置上下文（需在 start_game() 前调用）
+## 设置上下文（需在 start_game() 前调用）。
+## 推荐字段：
+##   "scene_tree"  : SceneTree    — 供 Actor 创建定时器
+##   "schedule"    : ScheduleData — 供 WorldStartActor 查询事件
 func setup(ctx: Dictionary) -> void:
 	_ctx = ctx
 
-## 启动游戏循环（在 _ready 完成后调用）
+## 启动游戏循环（在场景 _ready 末尾调用）。
 func start_game() -> void:
 	_game_loop()
 
 ## 主循环：无限轮转所有行动者。
-## 每个 await 会挂起协程，让 Godot 主线程继续渲染，玩家回合期间不会卡死。
+## 每回合开始时将 turn_number 写入 ctx，Actor 可从 ctx["turn_number"] 读取。
 func _game_loop() -> void:
 	while true:
 		turn_number += 1
+		_ctx["turn_number"] = turn_number
 		GameBus.turn_started.emit(turn_number)
 		print("\n========== 回合 %d 开始 ==========" % turn_number)
 
