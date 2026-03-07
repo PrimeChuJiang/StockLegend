@@ -3,14 +3,12 @@ class_name NormalCardItem
 extends CardItem
 
 
-## 普通卡牌只能在主阶段（MAIN）打出。
+## 普通卡牌只能在主阶段打出。
 func can_play_at_phase(phase: Enums.Phase) -> bool:
 	return phase == Enums.Phase.MAIN
 
 
-## 执行出牌：结算所有 ON_PLAY 触发的效果，然后将卡牌移至弃牌堆。
-func execute(ctx: Dictionary) -> void:
-	var resolver: EffectResolver = ctx.get("effect_resolver")
-	var zone_mgr: CardZoneManager = ctx.get("zone_manager")
-	resolver.resolve_effects(self, Enums.EffectTrigger.ON_PLAY, ctx)
-	zone_mgr.move_card(self, Enums.Zone.DISCARD)
+## 执行出牌逻辑。
+## TODO: 接入 EffectResolver 和 ZoneManager 后实现完整逻辑。
+func execute(_ctx: Dictionary) -> void:
+	print("[NormalCardItem] '%s' 执行出牌（TODO: 接入效果结算与区域移动）" % data.name)

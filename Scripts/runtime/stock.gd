@@ -31,22 +31,22 @@ func add_modifier(mod: SentimentModifier) -> void:
 
 ## 移除指定来源的修改器
 func remove_modifier_by_source(source_id: StringName) -> void:
-	_modifiers = _modifiers.filter(judge_mod_from_source.bind(source_id))
-func judge_mod_from_source(mod: SentimentModifier, source_id: StringName) -> bool:
-	return mod.source_id == source_id
+	_modifiers = _modifiers.filter(func(mod: SentimentModifier) -> bool:
+		return mod.source_id != source_id)
 
-## SETTLEMENT 阶段：tick所有的修改器，移除过期的
+## SETTLEMENT 阶段：tick 所有修改器，移除过期的
 func tick_modifiers() -> void:
 	var expired: Array[SentimentModifier] = []
 	for mod in _modifiers:
 		if mod.tick():
 			expired.append(mod)
-		for expired_mod in expired:
-			_modifiers.erase(expired_mod)
+	for mod in expired:
+		_modifiers.erase(mod)
 
-## MARKET_REACT阶段：按当前情绪更新股价
+## MARKET_REACT 阶段：按当前情绪更新股价
 func apply_price_change() -> void:
-	if is_delisted: return
+	if is_delisted:
+		return
 	var delta := get_sentiment() * def.get_volatility_coefficient()
 	price_history.append(current_price)
 	current_price += delta
@@ -56,6 +56,6 @@ func apply_price_change() -> void:
 func should_delist() -> bool:
 	return current_price <= def.get_delisting_threshold() and not is_delisted
 
-## 获取所有的修改器信息，供UI显示
+## 获取所有修改器信息，供 UI 显示
 func get_modifiers() -> Array[SentimentModifier]:
 	return _modifiers.duplicate()

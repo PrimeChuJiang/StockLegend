@@ -1,39 +1,46 @@
-## 玩家运行时状态，存储生命值、能量等可变数据。
+## 玩家运行时状态，纯数据层，不包含行动控制逻辑。
+## 行动控制（如消耗行动值、结束回合）由 PlayerActor 负责。
 class_name PlayerState
 extends RefCounted
 
 ## 金钱
 var cash: float = 10000.0
-## 能量
-var energy: int = 2
-## 能量上限值
-var max_energy: int = 2
+## 行动值（每回合可用于：获取素材 / 文章合成 / 获取写作方法卡）
+var action_points: int = 3
+## 行动值上限
+var max_action_points: int = 3
 ## 人脉
 var connections: int = 3
 ## 信誉
 var reputation: int = 50
 
-## 持仓{stock_id: StringName -> quantity: int}
+## 持仓 {stock_id: StringName -> quantity: int}
 var holdings: Dictionary = {}
 
 ## 草稿区（撰写完成，等待发表的文章）
 var draft_articles: Array[Article] = []
 
-## 当前回合的操作计数器
+## 交易次数（与行动值独立，单独限制）
 var trade_count: int = 0
 var max_trades: int = 3
-## 进修限制(每个回合只能进修一次)
+## 每回合限制行为
 var has_trained_today: bool = false
-## 窥视限制(每个回合只能窥视一次)
 var has_scouted_today: bool = false
 
-## 容器引用（由场景注入，而非 PlayerState 自己管理）
+## 容器引用（由场景注入）
 var deck: ItemContainer = null
 var hand: ItemContainer = null
 var discard: ItemContainer = null
 var exhaust: ItemContainer = null
-var method_library: ItemContainer = null      ## 写作方法库（替代旧的 Array[WritingMethodCard]）
-var article_workspace: ItemContainer = null   ## 文章撰写区（替代旧的临时列表）
+var method_library: ItemContainer = null
+var article_workspace: ItemContainer = null
+
+## 每个玩家回合开始时由 PlayerActor 调用，重置所有回合限制资源。
+func reset_turn_resources() -> void:
+	action_points = max_action_points
+	trade_count = 0
+	has_trained_today = false
+	has_scouted_today = false
 
 ## 买入股票
 func buy_stock(stock_id: StringName, quantity: int, price: float) -> bool:
@@ -42,7 +49,6 @@ func buy_stock(stock_id: StringName, quantity: int, price: float) -> bool:
 		return false
 	cash -= total_cost
 	trade_count += 1
-	## 更新持仓
 	holdings[stock_id] = holdings.get(stock_id, 0) + quantity
 	return true
 

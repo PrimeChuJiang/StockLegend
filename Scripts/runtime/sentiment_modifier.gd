@@ -16,7 +16,7 @@ var remaining_turns : int
 ## 工厂方法：从文章创建修改器
 static func from_article(article: Article) -> SentimentModifier:
 	var mod := SentimentModifier.new()
-	mod.source_id = article.id
+	mod.source_id = article.article_id
 	mod.source_type = "article"
 	mod.target_stock_ids = article.target_stock_ids
 	mod.value = article.final_impact*(1 if article.direction == Enums.Bias.BULLISH else -1)

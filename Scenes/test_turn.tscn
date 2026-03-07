@@ -1,0 +1,67 @@
+[gd_scene load_steps=3 format=3 uid="uid://d2sldqtw6nd27"]
+
+[ext_resource type="Script" path="res://Scripts/test/test_turn.gd" id="1"]
+[ext_resource type="Script" path="res://Scripts/systems/turn_manager.gd" id="2"]
+
+[node name="TestTurn" type="Node"]
+script = ExtResource("1")
+
+[node name="TurnManager" type="Node" parent="."]
+script = ExtResource("2")
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="Panel" type="Panel" parent="CanvasLayer"]
+offset_left = 10.0
+offset_top = 10.0
+offset_right = 400.0
+offset_bottom = 620.0
+
+[node name="VBox" type="VBoxContainer" parent="CanvasLayer/Panel"]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 14.0
+offset_top = 14.0
+offset_right = -14.0
+offset_bottom = -14.0
+
+[node name="TurnLabel" type="Label" parent="CanvasLayer/Panel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "回合：—"
+
+[node name="ActorLabel" type="Label" parent="CanvasLayer/Panel/VBox"]
+layout_mode = 2
+text = "当前行动者：—"
+
+[node name="PhaseLabel" type="Label" parent="CanvasLayer/Panel/VBox"]
+layout_mode = 2
+text = "阶段：—"
+
+[node name="APLabel" type="Label" parent="CanvasLayer/Panel/VBox"]
+layout_mode = 2
+text = "行动值：—"
+
+[node name="HSep1" type="HSeparator" parent="CanvasLayer/Panel/VBox"]
+layout_mode = 2
+
+[node name="LogBox" type="RichTextLabel" parent="CanvasLayer/Panel/VBox"]
+custom_minimum_size = Vector2(0, 350)
+layout_mode = 2
+size_flags_vertical = 3
+bbcode_enabled = true
+scroll_following = true
+
+[node name="HSep2" type="HSeparator" parent="CanvasLayer/Panel/VBox"]
+layout_mode = 2
+
+[node name="GatherButton" type="Button" parent="CanvasLayer/Panel/VBox"]
+layout_mode = 2
+disabled = true
+text = "获取素材（消耗 1 行动值）"
+
+[node name="EndTurnButton" type="Button" parent="CanvasLayer/Panel/VBox"]
+layout_mode = 2
+disabled = true
+text = "结束玩家回合"

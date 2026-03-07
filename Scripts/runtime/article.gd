@@ -15,7 +15,8 @@ var final_credibility: int = 0
 var final_impact: int = 0
 var direction: Enums.Bias = Enums.Bias.NEUTRAL
 var target_industry: Tag
-var target_stock_id: StringName # 非必须，当有具体股票目标时非空，当具有病毒传播效果的时候为空
+## 目标股票列表，空数组表示无具体股票目标（如病毒传播效果）
+var target_stock_ids: Array[StringName] = []
 
 ## 发表相关
 ## 发表渠道
