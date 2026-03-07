@@ -24,11 +24,13 @@ signal action_points_changed(new_val: int, max_val: int)
 signal article_composed(article: Article)
 signal article_published(article: Article, channel: Enums.Channel)
 signal article_busted(article: Article)
+signal article_expired(article: Article)
 
 ## 市场信号
 signal stock_price_changed(stock_id: StringName, old_price: float, new_price: float)
 signal stock_delisted(stock_id: StringName)
 signal sentiment_modifier_applied(stock_id: StringName, mod: SentimentModifier)
+signal price_modifier_applied(stock_id: StringName, mod: PriceModifier)
 
 ## 玩家信号
 signal player_trade(stock_id: StringName, quantity: int, is_buy: bool)

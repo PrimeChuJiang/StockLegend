@@ -4,8 +4,8 @@ class_name Enums
 ## 行动者类型：世界 / 玩家 / AI
 enum ActorType { WORLD, PLAYER, AI }
 
-## 世界阶段：揭示日程事件 / 结算突发事件 / 结算股票价格
-enum WorldPhase { REVEAL_EVENTS, RESOLVE_BREAKING, RESOLVE_PRICE }
+## 世界阶段：揭示日程事件 / 结算突发事件 / 结算文章新鲜度 / 结算股票价格
+enum WorldPhase { REVEAL_EVENTS, RESOLVE_BREAKING, SETTLE_ARTICLES, RESOLVE_PRICE }
 
 ## 卡牌类型：普通卡牌 / 瞬发卡牌 / 场地卡牌
 enum CardType { NORMAL, INSTANT, FIELD }
