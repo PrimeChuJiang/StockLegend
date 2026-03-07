@@ -4,23 +4,15 @@ class_name Enums
 ## 行动者类型：世界 / 玩家 / AI
 enum ActorType { WORLD, PLAYER, AI }
 
-## 世界阶段：揭示日程事件 / 结算突发事件
-enum WorldPhase { REVEAL_EVENTS, RESOLVE_BREAKING }
+## 世界阶段：揭示日程事件 / 结算突发事件 / 结算股票价格
+enum WorldPhase { REVEAL_EVENTS, RESOLVE_BREAKING, RESOLVE_PRICE }
 
 ## 卡牌类型：普通卡牌 / 瞬发卡牌 / 场地卡牌
 enum CardType { NORMAL, INSTANT, FIELD }
 
-## 卡牌出牌阶段：主阶段 / 瞬发（任意阶段）
-enum Phase { MAIN, INSTANT }
-
-## 卡牌区域：牌库 / 手牌 / 场地 / 弃牌堆 / 消耗堆
-enum Zone { DECK, HAND, FIELD, DISCARD, EXHAUST }
-
-## 卡牌属性键：费用 / 攻击 / 防御
-enum StatKey { COST, ATTACK, DEFENSE }
-
-## 目标选择类型：无目标 / 单体 / 全体
-enum TargetType { NONE, SINGLE, ALL }
+## 素材卡类型：数据 / 谣言 / 爆料 / 观点
+## 决定文章合成后的 ArticleType
+enum MaterialType { DATA, RUMOR, EXPOSE, OPINION }
 
 ## 效果触发时机：打出时 / 回合结束时 / 进入场地时 / 离开场地时 / 弃牌时
 enum EffectTrigger { ON_PLAY, ON_TURN_END, ON_FIELD_ENTER, ON_FIELD_EXIT, ON_DISCARD }

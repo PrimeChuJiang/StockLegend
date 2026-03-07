@@ -1,5 +1,5 @@
 ## 行动者基类，代表游戏中任何能在回合内行动的参与者。
-## 子类：WorldActor（世界）、PlayerActor（玩家）、AIActor（未来）。
+## 子类：WorldStartActor（世界头）、PlayerActor（玩家）、AIActor（未来）、WorldEndActor（世界尾）。
 ## 不要直接实例化此类。
 class_name Actor
 extends RefCounted

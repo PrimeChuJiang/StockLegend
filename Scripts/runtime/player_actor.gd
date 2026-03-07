@@ -3,11 +3,11 @@
 ## UI 层在玩家点击"结束回合"时发出该信号。
 ##
 ## 消耗行动值的操作（行动值共享池）：
-##   - try_gather_material()      获取素材
-##   - try_craft_article()        文章合成
+##   - try_gather_material()       获取素材
+##   - try_craft_article()         文章合成 → 返回 Article 或 null
 ##   - try_acquire_writing_method() 获取写作方法卡
 ## 不消耗行动值的操作（无次数限制）：
-##   - publish_article()          发表文章
+##   - publish_article()           发表文章（情绪修改直接生效）
 class_name PlayerActor
 extends Actor
 
@@ -25,7 +25,6 @@ func execute_turn(_ctx: Dictionary) -> void:
 	GameBus.action_points_changed.emit(state.action_points, state.max_action_points)
 	print("[PlayerActor] 玩家回合开始，行动值: %d/%d" % [state.action_points, state.max_action_points])
 
-	## 挂起，等待玩家点击"结束回合"按钮
 	await GameBus.player_ended_turn
 
 	print("[PlayerActor] 玩家回合结束")
@@ -42,12 +41,22 @@ func try_gather_material(_ctx: Dictionary) -> bool:
 	return true
 
 ## 文章合成（消耗 1 行动值）。
-func try_craft_article(_ctx: Dictionary) -> bool:
+## materials : 选择参与合成的素材卡数据
+## methods   : 选择参与合成的写作方法卡数据（可为空）
+## turn      : 当前回合编号，用于生成文章 ID
+## 返回合成成功的 Article；行动值不足时返回 null。
+func try_craft_article(
+	materials: Array[MaterialCardData],
+	methods: Array[WritingMethodCardData],
+	turn: int
+) -> Article:
 	if not _try_spend_ap(1):
-		return false
-	print("[PlayerActor] 文章合成，剩余行动值: %d" % state.action_points)
-	## TODO: 实际合成逻辑
-	return true
+		return null
+	var article := ArticleSystem.compose(materials, methods, turn, state.draft_articles.size())
+	state.draft_articles.append(article)
+	GameBus.article_composed.emit(article)
+	print("[PlayerActor] 文章合成完成: %s → %s" % [article.article_id, article.get_summary()])
+	return article
 
 ## 获取写作方法卡（消耗 1 行动值）。
 func try_acquire_writing_method(_ctx: Dictionary) -> bool:
@@ -60,9 +69,12 @@ func try_acquire_writing_method(_ctx: Dictionary) -> bool:
 ## ── 无限制操作 ────────────────────────────────────────────────────────
 
 ## 发表文章至指定渠道（无行动值消耗）。
-## 情感修改直接生效（对应 article 的 SentimentModifier）。
+## 情绪效果在 Stock.add_modifier() 后立即生效。
 func publish_article(article: Article, channel: Enums.Channel, _ctx: Dictionary) -> void:
-	print("[PlayerActor] 发表文章 → 渠道: %s" % Enums.Channel.keys()[channel])
+	article.channel = channel
+	article.is_published = true
+	print("[PlayerActor] 发表文章 → 渠道: %s | %s" % [
+		Enums.Channel.keys()[channel], article.get_summary()])
 	GameBus.article_published.emit(article, channel)
 
 ## ── 内部工具 ──────────────────────────────────────────────────────────

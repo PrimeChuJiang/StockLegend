@@ -7,16 +7,17 @@
 class_name MaterialCardData
 extends ItemData
 
+## 素材类型，决定参与合成时的文章类型组合
+@export var material_type: Enums.MaterialType = Enums.MaterialType.DATA
 ## 卡片稀有度
-@export var rarity : Enums.Rarity
-## 行业范围
-@export var event_tier : Enums.EventTier
+@export var rarity: Enums.Rarity = Enums.Rarity.COMMON
+## 影响层级：宏观 / 行业 / 公司
+@export var event_tier: Enums.EventTier = Enums.EventTier.INDUSTRY
 ## 行业标签
-@export var industry : Tag
-## 倾向
-@export var bias : Enums.Bias
-## 卡片自带可行度，取值范围1~5
-@export var credibility : int
-## 卡片自带影响力，取值范围1~5
-@export var impact : int
-
+@export var industry: Tag
+## 倾向（看涨 / 看跌 / 中性）
+@export var bias: Enums.Bias = Enums.Bias.NEUTRAL
+## 基础可信度（1~5），决定已发表文章的情绪效果持续回合数
+@export var credibility: int = 2
+## 基础影响力（1~5），决定已发表文章对股价的情绪强度
+@export var impact: int = 2

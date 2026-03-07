@@ -8,9 +8,13 @@ signal turn_ended(turn: int)
 signal actor_turn_started(actor_type: Enums.ActorType)
 signal actor_turn_ended(actor_type: Enums.ActorType)
 
-## 世界阶段信号：WorldActor 内部各阶段的开始与结束
-signal world_phase_started(phase: Enums.WorldPhase)
-signal world_phase_ended(phase: Enums.WorldPhase)
+## 世界阶段信号
+## WorldStartActor 内部各阶段的开始与结束
+signal world_start_phase_started(phase: Enums.WorldPhase)
+signal world_start_phase_ended(phase: Enums.WorldPhase)
+## WorldEndActor 内部各阶段的开始与结束
+signal world_end_phase_started(phase: Enums.WorldPhase)
+signal world_end_phase_ended(phase: Enums.WorldPhase)
 
 ## 玩家行动信号
 ## UI 层在玩家点击"结束回合"按钮时发出此信号，PlayerActor 等待它
@@ -31,10 +35,6 @@ signal sentiment_modifier_applied(stock_id: StringName, mod: SentimentModifier)
 ## 玩家信号
 signal player_trade(stock_id: StringName, quantity: int, is_buy: bool)
 signal reputation_changed(old_val: int, new_val: int)
-
-## 修改器信号
-signal modifier_added(card: CardItem, mod: Modifier)
-signal modifier_removed(card: CardItem, mod: Modifier)
 
 ## 环境信号
 signal event_revealed(event_def: EnviromentCardData)

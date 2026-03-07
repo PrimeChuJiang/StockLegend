@@ -1,6 +1,6 @@
 ## 回合管理器，驱动整个游戏的行动者轮次循环。
 ## 持有一个有序的 actors 数组，每回合依次调用每个行动者的 execute_turn()。
-## 行动者顺序即行动顺序，默认为：WorldActor → PlayerActor → （未来）AIActor。
+## 行动者顺序即行动顺序，默认为：WorldStartActor → PlayerActor → （未来）AIActor → WorldEndActor。
 ##
 ## 使用方式：
 ##   turn_manager.actors = [world_actor, player_actor]
