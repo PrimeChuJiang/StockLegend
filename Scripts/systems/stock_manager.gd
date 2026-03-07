@@ -36,11 +36,12 @@ func get_stock_ids() -> Array[StringName]:
 		ids.append(id)
 	return ids
 
-## 获取指定行业的所有股票。
+## 获取指定行业的所有股票（支持层级匹配）。
+## 例如传入 "Industry.Tech"，会匹配 "Industry.Tech" 和 "Industry.Tech.AI" 等子标签。
 func get_stocks_by_industry(industry: Tag) -> Array[Stock]:
 	var result: Array[Stock] = []
 	for stock: Stock in _stocks.values():
-		if stock.def.industry == industry:
+		if stock.def.industry and stock.def.industry.matches_tag(industry):
 			result.append(stock)
 	return result
 
@@ -66,7 +67,7 @@ func _get_ids_by_industry(industry: Tag) -> Array[StringName]:
 	var ids: Array[StringName] = []
 	for stock_id: StringName in _stocks:
 		var stock: Stock = _stocks[stock_id]
-		if stock.def.industry == industry:
+		if stock.def.industry and stock.def.industry.matches_tag(industry):
 			ids.append(stock_id)
 	return ids
 
@@ -79,10 +80,12 @@ func apply_sentiment_modifier(mod: SentimentModifier) -> void:
 	for stock_id in target_ids:
 		var stock := get_stock(stock_id)
 		if stock and not stock.is_delisted:
-			stock.add_modifier(mod)
-			GameBus.sentiment_modifier_applied.emit(stock_id, mod)
+			## 每只股票持有独立副本，避免共享 remaining_turns 导致多次 tick
+			var stock_mod := mod.clone()
+			stock.add_modifier(stock_mod)
+			GameBus.sentiment_modifier_applied.emit(stock_id, stock_mod)
 			print("[StockManager] 情绪修改器 → %s | 来源: %s | 值: %+d | 持续: %d 回合" % [
-				stock_id, mod.source_id, mod.value, mod.remaining_turns])
+				stock_id, stock_mod.source_id, stock_mod.value, stock_mod.remaining_turns])
 
 ## 分发价格修改器（立即生效，一次性）。
 ## 自动按目标规则解析影响范围：公司级 / 行业级 / 宏观级。

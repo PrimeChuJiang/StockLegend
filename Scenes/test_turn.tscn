@@ -19,7 +19,7 @@ script = ExtResource("3_unfn8")
 offset_left = 10.0
 offset_top = 10.0
 offset_right = 400.0
-offset_bottom = 620.0
+offset_bottom = 640.0
 
 [node name="VBox" type="VBoxContainer" parent="CanvasLayer/Panel"]
 layout_mode = 0
@@ -51,7 +51,7 @@ text = "行动值：—"
 layout_mode = 2
 
 [node name="LogBox" type="RichTextLabel" parent="CanvasLayer/Panel/VBox"]
-custom_minimum_size = Vector2(0, 350)
+custom_minimum_size = Vector2(0, 300)
 layout_mode = 2
 size_flags_vertical = 3
 bbcode_enabled = true
@@ -70,7 +70,60 @@ layout_mode = 2
 disabled = true
 text = "合成文章：爆料+数据+深度挖掘（消耗 1 行动值）"
 
+[node name="PublishButton" type="Button" parent="CanvasLayer/Panel/VBox"]
+layout_mode = 2
+disabled = true
+text = "发表最新草稿（目标：科技行业 看涨）"
+
+[node name="PriceModButton" type="Button" parent="CanvasLayer/Panel/VBox"]
+layout_mode = 2
+disabled = true
+text = "价格修改器：全市场 ×0.95（宏观利空）"
+
 [node name="EndTurnButton" type="Button" parent="CanvasLayer/Panel/VBox"]
 layout_mode = 2
 disabled = true
 text = "结束玩家回合"
+
+[node name="StockPanel" type="Panel" parent="CanvasLayer"]
+offset_left = 420.0
+offset_top = 10.0
+offset_right = 820.0
+offset_bottom = 640.0
+
+[node name="VBox" type="VBoxContainer" parent="CanvasLayer/StockPanel"]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 14.0
+offset_top = 14.0
+offset_right = -14.0
+offset_bottom = -14.0
+
+[node name="StockTitle" type="Label" parent="CanvasLayer/StockPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "股票市场"
+
+[node name="HSep" type="HSeparator" parent="CanvasLayer/StockPanel/VBox"]
+layout_mode = 2
+
+[node name="StockInfoBox" type="RichTextLabel" parent="CanvasLayer/StockPanel/VBox"]
+custom_minimum_size = Vector2(0, 250)
+layout_mode = 2
+size_flags_vertical = 3
+bbcode_enabled = true
+
+[node name="HSep2" type="HSeparator" parent="CanvasLayer/StockPanel/VBox"]
+layout_mode = 2
+
+[node name="StockLogTitle" type="Label" parent="CanvasLayer/StockPanel/VBox"]
+layout_mode = 2
+text = "市场事件日志"
+
+[node name="StockLogBox" type="RichTextLabel" parent="CanvasLayer/StockPanel/VBox"]
+custom_minimum_size = Vector2(0, 250)
+layout_mode = 2
+size_flags_vertical = 3
+bbcode_enabled = true
+scroll_following = true

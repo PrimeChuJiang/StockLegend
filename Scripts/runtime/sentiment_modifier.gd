@@ -65,12 +65,24 @@ static func _resolve_tier(env_def: EnviromentCardData) -> Enums.EventTier:
 		return Enums.EventTier.INDUSTRY
 	return Enums.EventTier.MACRO
 
-## 从环境牌的 tags 中提取行业标签（约定行业标签以 "Industry" 开头）。
+## 从环境牌的 tags 中提取行业标签（约定行业标签路径以 "Industry" 开头）。
+## 例如 tag_path = "Industry.Tech" 会匹配。
 static func _resolve_industry_tag(env_def: EnviromentCardData) -> Tag:
 	for tag: Tag in env_def.tags:
-		if tag.name.begins_with("Industry"):
+		if tag.matches_tag_path("Industry"):
 			return tag
 	return null
+
+## 创建一份独立副本（用于多股票分发，避免共享同一实例）。
+func clone() -> SentimentModifier:
+	var copy := SentimentModifier.new()
+	copy.source_id = source_id
+	copy.source_type = source_type
+	copy.target_stock_ids = target_stock_ids
+	copy.target_industry = target_industry
+	copy.value = value
+	copy.remaining_turns = remaining_turns
+	return copy
 
 ## SETTLEMENT 阶段调用，返回 true 表示已过期。
 func tick() -> bool:
