@@ -19,6 +19,7 @@ signal world_end_phase_ended(phase: Enums.WorldPhase)
 ## 玩家行动信号
 signal player_ended_turn
 signal action_points_changed(new_val: int, max_val: int)
+signal assets_changed()
 
 ## 文章信号
 signal article_composed(article: Article)
@@ -41,3 +42,4 @@ signal reputation_changed(old_val: int, new_val: int)
 signal event_revealed(event_config: ScheduleEventConfig)
 signal breaking_event_triggered(event_config: ScheduleEventConfig)
 signal events_showed(start_turn: int, end_turn: int, events: Array[ScheduleEventConfig])
+

@@ -17,6 +17,16 @@ extends Node
 @onready var end_turn_button: Button = $CanvasLayer/Panel/VBox/EndTurnButton
 @onready var stock_info_box: RichTextLabel = $CanvasLayer/StockPanel/VBox/StockInfoBox
 @onready var stock_log_box: RichTextLabel  = $CanvasLayer/StockPanel/VBox/StockLogBox
+@onready var cash_label: Label = $CanvasLayer/AssetsPanel/VBox/Money
+@onready var total_assets_label: Label = $CanvasLayer/AssetsPanel/VBox/TotalAssets
+@onready var assets_list: RichTextLabel = $CanvasLayer/AssetsPanel/VBox/AssetsList
+@onready var deal_info_box: RichTextLabel = $CanvasLayer/AssetsPanel/VBox/DealInfoBox
+@onready var buy_tech_alpha_button: Button = $CanvasLayer/DealPanel/VBoxContainer/BuyTechAlpha
+@onready var buy_tech_beta_button: Button = $CanvasLayer/DealPanel/VBoxContainer/BuyTechBeta
+@onready var buy_fin_gamma_button: Button = $CanvasLayer/DealPanel/VBoxContainer/BuyFinGamma
+@onready var sell_tech_alpha_button: Button = $CanvasLayer/DealPanel/VBoxContainer/SellTechAlpha
+@onready var sell_tech_beta_button: Button = $CanvasLayer/DealPanel/VBoxContainer/SellTechBeta
+@onready var sell_fin_gamma_button: Button = $CanvasLayer/DealPanel/VBoxContainer/SellFinGamma
 
 var _player_state: PlayerState
 var _world_start_actor: WorldStartActor
@@ -43,6 +53,7 @@ func _ready() -> void:
 	_connect_signals()
 	_setup_actors()
 	_update_stock_display()
+	_update_assets_display()
 	turn_manager.start_game()
 
 ## ── 行业标签构建 ────────────────────────────────────────────────────────
@@ -155,7 +166,8 @@ func _connect_signals() -> void:
 
 	GameBus.world_end_phase_ended.connect(func(phase: Enums.WorldPhase) -> void:
 		_log("  [color=purple]■ 结算阶段结束：%s[/color]" % Enums.WorldPhase.keys()[phase])
-		_update_stock_display())
+		_update_stock_display()
+		_update_assets_display())
 
 	## 行动值信号
 	GameBus.action_points_changed.connect(func(new_val: int, max_val: int) -> void:
@@ -193,7 +205,8 @@ func _connect_signals() -> void:
 	## 股票市场信号
 	GameBus.sentiment_modifier_applied.connect(func(stock_id: StringName, mod: SentimentModifier) -> void:
 		_stock_log("[color=cyan]情绪修改器 → %s | %+d | 持续 %d 回合 | 来源: %s[/color]" % [
-			stock_id, mod.value, mod.remaining_turns, mod.source_id]))
+			stock_id, mod.value, mod.remaining_turns, mod.source_id])
+		_update_stock_display())
 
 	GameBus.stock_price_changed.connect(func(stock_id: StringName, old_price: float, new_price: float) -> void:
 		var delta := new_price - old_price
@@ -205,6 +218,10 @@ func _connect_signals() -> void:
 	GameBus.stock_delisted.connect(func(stock_id: StringName) -> void:
 		_stock_log("[color=red][b]退市！ %s[/b][/color]" % stock_id)
 		_update_stock_display())
+	
+	GameBus.assets_changed.connect(func() -> void:
+		_update_assets_display()
+	)	
 
 	## 按钮
 	gather_button.pressed.connect(_on_gather_pressed)
@@ -212,6 +229,12 @@ func _connect_signals() -> void:
 	publish_button.pressed.connect(_on_publish_pressed)
 	price_mod_button.pressed.connect(_on_price_mod_pressed)
 	end_turn_button.pressed.connect(_on_end_turn_pressed)
+	buy_fin_gamma_button.pressed.connect(_on_buy_fin_gamma_pressed)
+	buy_tech_alpha_button.pressed.connect(_on_buy_tech_alpha_pressed)
+	buy_tech_beta_button.pressed.connect(_on_buy_tech_beta_pressed)
+	sell_fin_gamma_button.pressed.connect(_on_sell_fin_gamma_pressed)
+	sell_tech_alpha_button.pressed.connect(_on_sell_tech_alpha_pressed)
+	sell_tech_beta_button.pressed.connect(_on_sell_tech_beta_pressed)
 
 ## ── 测试日程构建 ────────────────────────────────────────────────────────
 
@@ -332,6 +355,41 @@ func _on_end_turn_pressed() -> void:
 	_log("[color=gray]  → 玩家点击结束回合[/color]")
 	GameBus.player_ended_turn.emit()
 
+func _on_buy_fin_gamma_pressed() -> void:
+	if _player_actor.try_buy_stock(&"fin_gamma", 1):
+		_deal_log("[color=green] 购买 fin_gama 数量：%d 成功[/color]" % 1)
+	else:
+		_deal_log("[color=red] 购买 fin_gama 数量：%d 失败[/color]" % 1)
+
+func _on_buy_tech_alpha_pressed() -> void:
+	if _player_actor.try_buy_stock(&"tech_alpha", 1):
+		_deal_log("[color=green] 购买 tech_alpha 数量：%d 成功[/color]" % 1)
+	else:
+		_deal_log("[color=red] 购买 tech_alpha 数量：%d 失败[/color]" % 1)
+
+func _on_buy_tech_beta_pressed() -> void:
+	if _player_actor.try_buy_stock(&"tech_beta", 1):
+		_deal_log("[color=green] 购买 tech_beta 数量：%d 成功[/color]" % 1)
+	else:
+		_deal_log("[color=red] 购买 tech_beta 数量：%d 失败[/color]" % 1)
+
+func _on_sell_fin_gamma_pressed() -> void:
+	if _player_actor.try_sell_stock(&"fin_gamma", 1):
+		_deal_log("[color=green] 卖出 fin_gama 数量：%d 成功[/color]" % 1)
+	else:
+		_deal_log("[color=red] 卖出 fin_gama 数量：%d 失败[/color]" % 1)
+
+func _on_sell_tech_alpha_pressed() -> void:
+	if _player_actor.try_sell_stock(&"tech_alpha", 1):
+		_deal_log("[color=green] 卖出 tech_alpha 数量：%d 成功[/color]" % 1)
+	else:
+		_deal_log("[color=red] 卖出 tech_alpha 数量：%d 失败[/color]" % 1)
+
+func _on_sell_tech_beta_pressed() -> void:
+	if _player_actor.try_sell_stock(&"tech_beta", 1):
+		_deal_log("[color=green] 卖出 tech_beta 数量：%d 成功[/color]" % 1)
+	else:
+		_deal_log("[color=red] 卖出 tech_beta 数量：%d 失败[/color]" % 1)
 ## ── Actor 回合事件 ────────────────────────────────────────────────────
 
 func _on_actor_turn_started(actor_type: Enums.ActorType) -> void:
@@ -341,6 +399,12 @@ func _on_actor_turn_started(actor_type: Enums.ActorType) -> void:
 	publish_button.disabled = not is_player
 	price_mod_button.disabled = not is_player
 	end_turn_button.disabled = not is_player
+	buy_fin_gamma_button.disabled = not is_player or StockManager.get_stock(&"fin_gamma").is_delisted
+	buy_tech_alpha_button.disabled = not is_player or StockManager.get_stock(&"tech_alpha").is_delisted
+	buy_tech_beta_button.disabled = not is_player or StockManager.get_stock(&"tech_beta").is_delisted
+	sell_fin_gamma_button.disabled = not is_player or StockManager.get_stock(&"fin_gamma").is_delisted
+	sell_tech_alpha_button.disabled = not is_player or StockManager.get_stock(&"tech_alpha").is_delisted
+	sell_tech_beta_button.disabled = not is_player or StockManager.get_stock(&"tech_beta").is_delisted
 	match actor_type:
 		Enums.ActorType.WORLD:
 			actor_label.text = "当前行动者：世界"
@@ -358,6 +422,9 @@ func _on_actor_turn_ended(actor_type: Enums.ActorType) -> void:
 	publish_button.disabled = true
 	price_mod_button.disabled = true
 	end_turn_button.disabled = true
+	sell_fin_gamma_button.disabled = true
+	sell_tech_alpha_button.disabled = true
+	sell_tech_beta_button.disabled = true
 	match actor_type:
 		Enums.ActorType.WORLD:
 			_log("[color=yellow]【世界回合】结束[/color]")
@@ -397,6 +464,23 @@ func _update_stock_display() -> void:
 	stock_info_box.text = ""
 	stock_info_box.append_text(text if not text.is_empty() else "（无股票数据）")
 
+## ── 资产面板显示 ────────────────────────────────────────────────────────
+
+func _update_assets_display() -> void:
+	var cash = _player_state.cash
+	var holdings = _player_state.holdings
+	var total_value: float = cash
+	var assets_list_text: String = ""
+	for stock_id in holdings.keys():
+		var stock: Stock = StockManager.get_stock(stock_id)
+		var quantity: int = holdings[stock_id]
+		total_value += quantity * stock.current_price
+		assets_list_text += "股票ID：%s 数量：%d 当前价格：%.2f\n" %[stock_id, quantity, stock.current_price]
+	total_assets_label.text = "资产：%.2f" % total_value
+	cash_label.text = "现金：%.2f" % cash
+	assets_list.text = assets_list_text
+
+
 ## ── 工具方法 ──────────────────────────────────────────────────────────
 
 func _log(text: String) -> void:
@@ -404,6 +488,9 @@ func _log(text: String) -> void:
 
 func _stock_log(text: String) -> void:
 	stock_log_box.append_text(text + "\n")
+
+func _deal_log(text: String) -> void:
+	deal_info_box.append_text(text + "\n")
 
 func _material_names(cards: Array[MaterialCardData]) -> String:
 	var names: Array[String] = []

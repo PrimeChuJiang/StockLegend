@@ -66,6 +66,24 @@ func try_acquire_writing_method(_ctx: Dictionary) -> bool:
 	## TODO: 实际获取逻辑
 	return true
 
+## 购买股票（消耗 1 行动值）。
+func try_buy_stock(stock_id: StringName, quantity: int) -> bool:
+	if not _try_spend_ap(1):
+		return false
+	if state.buy_stock(stock_id, quantity, StockManager.get_stock(stock_id).current_price):
+		print("[PlayerActor] 购买股票 %s * %d" % [stock_id, quantity])
+		return true
+	return false
+
+## 卖出股票（消耗 1 行动值）。
+func try_sell_stock(stock_id: StringName, quantity: int) -> bool:
+	if not _try_spend_ap(1):
+		return false
+	if state.sell_stock(stock_id, quantity, StockManager.get_stock(stock_id).current_price):
+		print("[PlayerActor] 卖出股票 %s * %d" % [stock_id, quantity])
+		return true
+	return false
+
 ## ── 无限制操作 ────────────────────────────────────────────────────────
 
 ## 发表文章至指定渠道（无行动值消耗）。

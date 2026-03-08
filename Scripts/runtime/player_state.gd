@@ -15,7 +15,7 @@ var connections: int = 3
 var reputation: int = 50
 
 ## 持仓 {stock_id: StringName -> quantity: int}
-var holdings: Dictionary = {}
+var holdings: Dictionary[StringName, int] = {}
 
 ## 草稿区（撰写完成，等待发表的文章）
 var draft_articles: Array[Article] = []
@@ -50,6 +50,7 @@ func buy_stock(stock_id: StringName, quantity: int, price: float) -> bool:
 	cash -= total_cost
 	trade_count += 1
 	holdings[stock_id] = holdings.get(stock_id, 0) + quantity
+	GameBus.assets_changed.emit()
 	return true
 
 ## 卖出股票
@@ -63,4 +64,5 @@ func sell_stock(stock_id: StringName, quantity: int, price: float) -> bool:
 	if holdings[stock_id] == 0:
 		holdings.erase(stock_id)
 	trade_count += 1
+	GameBus.assets_changed.emit()
 	return true

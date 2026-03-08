@@ -127,3 +127,92 @@ layout_mode = 2
 size_flags_vertical = 3
 bbcode_enabled = true
 scroll_following = true
+
+[node name="AssetsPanel" type="Panel" parent="CanvasLayer"]
+offset_left = 835.0
+offset_top = 10.0
+offset_right = 1138.0
+offset_bottom = 336.0
+
+[node name="VBox" type="VBoxContainer" parent="CanvasLayer/AssetsPanel"]
+layout_mode = 0
+offset_left = 13.0
+offset_top = 14.0
+offset_right = 291.0
+offset_bottom = 314.0
+
+[node name="Money" type="Label" parent="CanvasLayer/AssetsPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "现金：—"
+
+[node name="TotalAssets" type="Label" parent="CanvasLayer/AssetsPanel/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "总资产：—"
+
+[node name="HSeparator" type="HSeparator" parent="CanvasLayer/AssetsPanel/VBox"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="CanvasLayer/AssetsPanel/VBox"]
+layout_mode = 2
+text = "资产列表"
+
+[node name="AssetsList" type="RichTextLabel" parent="CanvasLayer/AssetsPanel/VBox"]
+custom_minimum_size = Vector2(0, 105)
+layout_mode = 2
+
+[node name="HSeparator2" type="HSeparator" parent="CanvasLayer/AssetsPanel/VBox"]
+layout_mode = 2
+
+[node name="Label2" type="Label" parent="CanvasLayer/AssetsPanel/VBox"]
+layout_mode = 2
+text = "交易日志"
+
+[node name="DealInfoBox" type="RichTextLabel" parent="CanvasLayer/AssetsPanel/VBox"]
+custom_minimum_size = Vector2(0, 60)
+layout_mode = 2
+scroll_following = true
+
+[node name="DealPanel" type="Panel" parent="CanvasLayer"]
+offset_left = 835.0
+offset_top = 349.0
+offset_right = 1138.0
+offset_bottom = 640.0
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer/DealPanel"]
+layout_mode = 0
+offset_left = 12.0
+offset_top = 12.0
+offset_right = 293.0
+offset_bottom = 277.0
+
+[node name="BuyTechAlpha" type="Button" parent="CanvasLayer/DealPanel/VBoxContainer"]
+layout_mode = 2
+disabled = true
+text = "购买科技Alpha * 1"
+
+[node name="BuyTechBeta" type="Button" parent="CanvasLayer/DealPanel/VBoxContainer"]
+layout_mode = 2
+disabled = true
+text = "购买科技Beta * 1"
+
+[node name="BuyFinGamma" type="Button" parent="CanvasLayer/DealPanel/VBoxContainer"]
+layout_mode = 2
+disabled = true
+text = "购买金融Gamma * 1"
+
+[node name="SellTechAlpha" type="Button" parent="CanvasLayer/DealPanel/VBoxContainer"]
+layout_mode = 2
+disabled = true
+text = "卖出科技Alpha * 1"
+
+[node name="SellTechBeta" type="Button" parent="CanvasLayer/DealPanel/VBoxContainer"]
+layout_mode = 2
+disabled = true
+text = "卖出科技Beta * 1"
+
+[node name="SellFinGamma" type="Button" parent="CanvasLayer/DealPanel/VBoxContainer"]
+layout_mode = 2
+disabled = true
+text = "卖出金融Gamma * 1"
