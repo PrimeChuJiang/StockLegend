@@ -91,6 +91,10 @@ func add_player(player: PlayerNode) -> void:
 	actors.insert(actors.size() - 1, player.player_actor)
 	_ctx["player_states"].append(player.player_state)
 	print("玩家 %s 加入游戏" % player.multiplayer_id)
+	## 主机端：立即推送初始资产数据给所有客户端
+	if _is_network_server():
+		var s := player.player_state
+		_sync_assets_changed.rpc(s.player_id, s.cash, s.holdings.duplicate())
 
 ## 玩家离开
 func remove_player(player: PlayerNode) -> void:
@@ -110,6 +114,59 @@ func request_end_turn(player_id: StringName) -> void:
 	if not multiplayer.is_server():
 		return
 	GameBus.player_ended_turn.emit(player_id)
+
+## 客户端请求获取素材，主机验证后由对应 PlayerActor 执行
+@rpc("any_peer", "reliable")
+func request_gather(player_id: StringName) -> void:
+	if not multiplayer.is_server():
+		return
+	for actor in actors:
+		if actor is PlayerActor and actor.actor_id == player_id:
+			actor.try_gather_material({})
+			return
+
+## 客户端请求合成文章，主机验证后由对应 PlayerActor 执行
+## material_indices / method_indices 暂为占位，测试阶段使用固定素材
+@rpc("any_peer", "reliable")
+func request_craft(player_id: StringName, turn: int) -> void:
+	if not multiplayer.is_server():
+		return
+	for actor in actors:
+		if actor is PlayerActor and actor.actor_id == player_id:
+			## TODO: 从客户端传入素材选择，测试阶段由信号通知 test_turn 处理
+			GameBus.craft_requested.emit(player_id, turn)
+			return
+
+## 客户端请求发表文章，主机验证后由对应 PlayerActor 执行
+@rpc("any_peer", "reliable")
+func request_publish(player_id: StringName) -> void:
+	if not multiplayer.is_server():
+		return
+	GameBus.publish_requested.emit(player_id)
+
+## 客户端请求买入股票，主机验证后由对应 PlayerActor 执行
+@rpc("any_peer", "reliable")
+func request_buy_stock(player_id: StringName, stock_id: StringName, quantity: int) -> void:
+	if not multiplayer.is_server():
+		return
+	for actor in actors:
+		if actor is PlayerActor and actor.actor_id == player_id:
+			var success: bool = actor.try_buy_stock(stock_id, quantity)
+			GameBus.player_trade.emit(player_id, stock_id, quantity, true, success)
+			_sync_trade_result.rpc(player_id, stock_id, quantity, true, success)
+			return
+
+## 客户端请求卖出股票，主机验证后由对应 PlayerActor 执行
+@rpc("any_peer", "reliable")
+func request_sell_stock(player_id: StringName, stock_id: StringName, quantity: int) -> void:
+	if not multiplayer.is_server():
+		return
+	for actor in actors:
+		if actor is PlayerActor and actor.actor_id == player_id:
+			var success: bool = actor.try_sell_stock(stock_id, quantity)
+			GameBus.player_trade.emit(player_id, stock_id, quantity, false, success)
+			_sync_trade_result.rpc(player_id, stock_id, quantity, false, success)
+			return
 
 ## ── 网络同步工具 ────────────────────────────────────────────────────
 
@@ -185,20 +242,29 @@ func _forward_action_points_changed(player_id: StringName, new_val: int, max_val
 	if _is_network_server():
 		_sync_action_points_changed.rpc(player_id, new_val, max_val)
 
-func _forward_assets_changed(player_id: StringName) -> void:
-	if not _is_network_server():
-		return
-	var state := _find_player_state(player_id)
-	if state:
-		_sync_assets_changed.rpc(player_id, state.cash, state.holdings)
+func _forward_assets_changed(player_id: StringName, cash: float, holdings: Dictionary) -> void:
+	if _is_network_server():
+		_sync_assets_changed.rpc(player_id, cash, holdings)
 
 func _forward_article_composed(player_id: StringName, article: Article) -> void:
 	if _is_network_server():
-		_sync_article_composed.rpc(player_id, article.article_id, article.get_summary())
+		_sync_article_composed.rpc(player_id, _serialize_article(article))
 
 func _forward_article_published(player_id: StringName, article: Article, channel: Enums.Channel) -> void:
 	if _is_network_server():
-		_sync_article_published.rpc(player_id, article.article_id, article.get_summary(), channel)
+		_sync_article_published.rpc(player_id, _serialize_article(article), channel)
+
+## 序列化文章数据用于 RPC 传输
+static func _serialize_article(article: Article) -> Dictionary:
+	return {
+		"article_id": article.article_id,
+		"article_type": article.article_type,
+		"direction": article.direction,
+		"final_impact": article.final_impact,
+		"final_credibility": article.final_credibility,
+		"target_industry": article.target_industry.name if article.target_industry else "",
+		"summary": article.get_summary(),
+	}
 
 func _forward_article_expired(article: Article) -> void:
 	if _is_network_server():
@@ -254,7 +320,7 @@ func _sync_action_points_changed(player_id: StringName, new_val: int, max_val: i
 @rpc("authority", "reliable")
 func _sync_assets_changed(player_id: StringName, cash: float, holdings: Dictionary) -> void:
 	_update_client_player_state(player_id, {"cash": cash, "holdings": holdings})
-	GameBus.assets_changed.emit(player_id)
+	GameBus.assets_changed.emit(player_id, cash, holdings)
 
 ## 客户端侧更新本地 PlayerState 镜像
 func _update_client_player_state(player_id: StringName, data: Dictionary) -> void:
@@ -269,19 +335,20 @@ func _update_client_player_state(player_id: StringName, data: Dictionary) -> voi
 			break
 
 @rpc("authority", "reliable")
-func _sync_article_composed(player_id: StringName, article_id: StringName, summary: String) -> void:
-	## 客户端收到精简版文章数据，用于日志显示
-	## TODO: 如需完整 Article 对象，需扩展序列化
-	_log_on_client("[文章合成] 玩家 %s: %s — %s" % [player_id, article_id, summary])
+func _sync_article_composed(player_id: StringName, data: Dictionary) -> void:
+	GameBus.article_composed_synced.emit(player_id, data)
 
 @rpc("authority", "reliable")
-func _sync_article_published(player_id: StringName, article_id: StringName, summary: String, channel: int) -> void:
-	_log_on_client("[文章发表] 玩家 %s: %s — %s (渠道: %s)" % [
-		player_id, article_id, summary, Enums.Channel.keys()[channel]])
+func _sync_article_published(player_id: StringName, data: Dictionary, channel: int) -> void:
+	GameBus.article_published_synced.emit(player_id, data, channel)
 
 @rpc("authority", "reliable")
 func _sync_article_expired(article_id: StringName) -> void:
 	_log_on_client("[草稿过期] %s" % article_id)
+
+@rpc("authority", "reliable")
+func _sync_trade_result(player_id: StringName, stock_id: StringName, quantity: int, is_buy: bool, success: bool) -> void:
+	GameBus.player_trade.emit(player_id, stock_id, quantity, is_buy, success)
 
 @rpc("authority", "reliable")
 func _sync_event_revealed(reveal_name: String, card_count: int) -> void:

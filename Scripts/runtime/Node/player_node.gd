@@ -24,8 +24,9 @@ var player_actor : PlayerActor = null
 @export var sync_player_data : Dictionary = {}
 
 ## 初始化玩家节点，设置玩家id和状态。
+## 注意：不在此处调 set_multiplayer_authority，改由 _enter_tree 处理，
+## 避免 MultiplayerSynchronizer 在节点未入树时缺少 network ID。
 func setup(_peer_id: int) -> void:
-	set_multiplayer_authority(_peer_id)
 	peer_id = _peer_id
 	self.multiplayer_id = "player_" + str(_peer_id)
 	player_state = PlayerState.new(multiplayer_id)
@@ -34,6 +35,14 @@ func setup(_peer_id: int) -> void:
 		"peer_id": _peer_id,
 		"multiplayer_id": multiplayer_id,
 	}
+
+func _enter_tree() -> void:
+	## 客户端通过 MultiplayerSpawner 复制时 peer_id 还是 0，
+	## 从节点名 "Player_{peer_id}" 解析真实 peer_id。
+	if peer_id == 0 and name.begins_with("Player_"):
+		peer_id = name.trim_prefix("Player_").to_int()
+	if peer_id != 0:
+		set_multiplayer_authority(peer_id)
 
 func _ready() -> void:
 	if not multiplayer.is_server():

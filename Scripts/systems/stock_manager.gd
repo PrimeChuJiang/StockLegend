@@ -145,6 +145,10 @@ func settle_turn() -> void:
 				_sync_stock_delisted.rpc(stock_id)
 			print("[StockManager] %s 已退市！" % stock_id)
 
+	## 4. 通知客户端也 tick 情绪修改器，保持修改器列表同步
+	if _is_network_server():
+		_sync_tick_modifiers.rpc()
+
 ## ── 网络同步 ────────────────────────────────────────────────────────
 
 func _is_network_server() -> bool:
@@ -174,3 +178,10 @@ func _sync_sentiment_modifier_applied(stock_id: StringName, source_id: StringNam
 	if stock:
 		stock.add_modifier(mod)
 	GameBus.sentiment_modifier_applied.emit(stock_id, mod)
+
+@rpc("authority", "reliable")
+func _sync_tick_modifiers() -> void:
+	for stock_id: StringName in _stocks:
+		var stock: Stock = _stocks[stock_id]
+		if not stock.is_delisted:
+			stock.tick_modifiers()

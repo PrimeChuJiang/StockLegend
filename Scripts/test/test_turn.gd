@@ -46,6 +46,10 @@ var _player_actor: PlayerActor :
 
 ## ── 多人端玩家 ──────────────────────────────────────────────────────
 var _local_player_node : PlayerNode = null
+## 客户端身份与数据缓存（不依赖 _local_player_node）
+var _local_multiplayer_id: StringName = &""
+var _local_cash: float = 10000.0
+var _local_holdings: Dictionary = {}
 
 ## ── 测试用行业标签 ──────────────────────────────────────────────────────
 var _tag_industry: Tag
@@ -186,7 +190,7 @@ func _connect_signals() -> void:
 	GameBus.world_end_phase_ended.connect(func(phase: Enums.WorldPhase) -> void:
 		_log("  [color=purple]■ 结算阶段结束：%s[/color]" % Enums.WorldPhase.keys()[phase])
 		_update_stock_display()
-		if _local_player_node:
+		if _local_multiplayer_id != &"":
 			_update_assets_display())
 
 	## 行动值信号
@@ -194,13 +198,37 @@ func _connect_signals() -> void:
 		ap_label.text = "行动值：%d / %d" % [new_val, max_val]
 		_log("  玩家 %s 行动值变化：%d / %d" % [_player_id, new_val, max_val]))
 
-	## 文章信号
-	GameBus.article_composed.connect(func(_player_id: StringName, article: Article) -> void:
-		_log("[color=yellow]  ★ 玩家 %s 文章合成完成！[/color]" % _player_id)
+	## 文章信号（主机端 — 只显示本地玩家的合成日志）
+	GameBus.article_composed.connect(func(pid: StringName, article: Article) -> void:
+		if pid != _local_multiplayer_id: return
+		_log("[color=yellow]  ★ 文章合成完成！[/color]")
 		_log("    ID: %s" % article.article_id)
 		_log("    素材: %s" % _material_names(article.material_cards))
 		_log("    方法: %s" % _method_names(article.method_cards))
 		_log("    结果: %s" % article.get_summary()))
+
+	## 文章信号（客户端 — 从序列化数据显示）
+	GameBus.article_composed_synced.connect(func(pid: StringName, data: Dictionary) -> void:
+		if pid != _local_multiplayer_id: return
+		_log("[color=yellow]  ★ 文章合成完成！[/color]")
+		_log("    ID: %s" % data.get("article_id", ""))
+		_log("    结果: %s" % data.get("summary", "")))
+
+	## 文章发表信号（主机端 — 详细信息）
+	GameBus.article_published.connect(func(pid: StringName, article: Article, channel: Enums.Channel) -> void:
+		_log_article_published(pid, {
+			"article_id": article.article_id,
+			"article_type": article.article_type,
+			"direction": article.direction,
+			"final_impact": article.final_impact,
+			"final_credibility": article.final_credibility,
+			"target_industry": article.target_industry.name if article.target_industry else "",
+			"summary": article.get_summary(),
+		}, channel))
+
+	## 文章发表信号（客户端 — 从序列化数据显示）
+	GameBus.article_published_synced.connect(func(pid: StringName, data: Dictionary, channel: int) -> void:
+		_log_article_published(pid, data, channel as Enums.Channel))
 
 	GameBus.article_expired.connect(func(article: Article) -> void:
 		_log("[color=gray]  ✕ 草稿过期: %s[/color]" % article.article_id))
@@ -239,11 +267,24 @@ func _connect_signals() -> void:
 		_stock_log("[color=red][b]退市！ %s[/b][/color]" % stock_id)
 		_update_stock_display())
 	
-	GameBus.assets_changed.connect(func(_player_id: StringName) -> void:
-		if _local_player_node == null : return
-		if _player_id == _local_player_node.multiplayer_id:
+	GameBus.assets_changed.connect(func(pid: StringName, cash: float, holdings: Dictionary) -> void:
+		if pid == _local_multiplayer_id:
+			_local_cash = cash
+			_local_holdings = holdings
 			_update_assets_display()
-		_log("  玩家 %s 资产更新" % _player_id))	
+		_log("  玩家 %s 资产更新" % pid))
+
+	## 客户端操作请求（RPC → 主机信号 → 主机执行）
+	GameBus.craft_requested.connect(_do_craft)
+	GameBus.publish_requested.connect(_do_publish)
+
+	## 交易结果日志（主机和客户端都会收到）
+	GameBus.player_trade.connect(func(pid: StringName, stock_id: StringName, quantity: int, is_buy: bool, success: bool) -> void:
+		if pid != _local_multiplayer_id: return
+		var action := "购买" if is_buy else "卖出"
+		var color := "green" if success else "red"
+		var result := "成功" if success else "失败"
+		_deal_log("[color=%s] %s %s 数量：%d %s[/color]" % [color, action, stock_id, quantity, result]))
 
 	## 按钮
 	gather_button.pressed.connect(_on_gather_pressed)
@@ -397,32 +438,60 @@ func _on_player_node_removed(node: Node) -> void:
 ## ── 按钮事件 ──────────────────────────────────────────────────────────
 
 func _on_gather_pressed() -> void:
-	if not _player_actor: return
-	_player_actor.try_gather_material({})
+	if _local_multiplayer_id == &"": return
+	if multiplayer.is_server():
+		if _player_actor:
+			_player_actor.try_gather_material({})
+	else:
+		turn_manager.request_gather.rpc_id(1, _local_multiplayer_id)
 
 func _on_craft_pressed() -> void:
-	if not _player_actor: return
-	var materials: Array[MaterialCardData] = [_mat_expose, _mat_data]
-	var methods: Array[WritingMethodCardData] = [_method_deep_dig]
-	var article := _player_actor.try_craft_article(materials, methods, turn_manager.turn_number)
-	if article:
-		## 设置文章的目标行业（素材都是科技行业）
-		article.target_industry = _tag_tech
+	if _local_multiplayer_id == &"": return
+	if multiplayer.is_server():
+		_do_craft(_local_multiplayer_id, turn_manager.turn_number)
+	else:
+		turn_manager.request_craft.rpc_id(1, _local_multiplayer_id, turn_manager.turn_number)
 
 func _on_publish_pressed() -> void:
-	if not _player_state: return
-	if _player_state.draft_articles.is_empty():
+	if _local_multiplayer_id == &"": return
+	if multiplayer.is_server():
+		_do_publish(_local_multiplayer_id)
+	else:
+		turn_manager.request_publish.rpc_id(1, _local_multiplayer_id)
+
+## 合成文章的实际逻辑（仅主机执行）
+func _do_craft(player_id: StringName, turn: int) -> void:
+	var actor := _find_player_actor(player_id)
+	if not actor: return
+	var materials: Array[MaterialCardData] = [_mat_expose, _mat_data]
+	var methods: Array[WritingMethodCardData] = [_method_deep_dig]
+	var article := actor.try_craft_article(materials, methods, turn)
+	if article:
+		article.target_industry = _tag_tech
+
+## 发表文章的实际逻辑（仅主机执行）
+func _do_publish(player_id: StringName) -> void:
+	var actor := _find_player_actor(player_id)
+	if not actor: return
+	if actor.state.draft_articles.is_empty():
 		_log("[color=red]  没有可发表的草稿[/color]")
 		return
-	var article: Article = _player_state.draft_articles[-1]
-	_player_actor.publish_article(article, Enums.Channel.SELF_MEDIA, {})
-	_player_state.draft_articles.erase(article)
+	var article: Article = actor.state.draft_articles[-1]
+	actor.publish_article(article, Enums.Channel.SELF_MEDIA, {})
+	actor.state.draft_articles.erase(article)
 
 	## 文章发表 → 创建情绪修改器 → 分发到市场
 	var mod := SentimentModifier.from_article(article)
 	StockManager.apply_sentiment_modifier(mod)
 	_log("[color=yellow]  情绪修改器已分发：目标行业=%s | 值=%+d | 持续=%d[/color]" % [
 		"Tech" if article.target_industry else "无", mod.value, mod.remaining_turns])
+
+## 根据 player_id 找到对应的 PlayerActor
+func _find_player_actor(player_id: StringName) -> PlayerActor:
+	for actor in turn_manager.actors:
+		if actor is PlayerActor and actor.actor_id == player_id:
+			return actor
+	return null
 
 func _on_price_mod_pressed() -> void:
 	## 宏观价格修改器：全市场价格 ×0.95（target_stock_ids 和 target_industry 都为空 → 宏观级）
@@ -432,67 +501,69 @@ func _on_price_mod_pressed() -> void:
 	_stock_log("[color=orange]宏观价格修改器：全市场 ×0.95[/color]")
 
 func _on_end_turn_pressed() -> void:
-	if not _local_player_node: return
+	if _local_multiplayer_id == &"": return
 	_log("[color=gray]  → 玩家点击结束回合[/color]")
 	## 主机直接 emit；客户端通过 RPC 发给主机
 	if multiplayer.is_server():
-		GameBus.player_ended_turn.emit(_local_player_node.multiplayer_id)
+		GameBus.player_ended_turn.emit(_local_multiplayer_id)
 	else:
-		turn_manager.request_end_turn.rpc_id(1, _local_player_node.multiplayer_id)
+		turn_manager.request_end_turn.rpc_id(1, _local_multiplayer_id)
 
 func _on_buy_fin_gamma_pressed() -> void:
-	if not _player_actor: return
-	if _player_actor.try_buy_stock(&"fin_gamma", 1):
-		_deal_log("[color=green] 购买 fin_gama 数量：%d 成功[/color]" % 1)
-	else:
-		_deal_log("[color=red] 购买 fin_gama 数量：%d 失败[/color]" % 1)
+	_do_buy_stock(&"fin_gamma", 1)
 
 func _on_buy_tech_alpha_pressed() -> void:
-	if not _player_actor: return
-	if _player_actor.try_buy_stock(&"tech_alpha", 1):
-		_deal_log("[color=green] 购买 tech_alpha 数量：%d 成功[/color]" % 1)
-	else:
-		_deal_log("[color=red] 购买 tech_alpha 数量：%d 失败[/color]" % 1)
+	_do_buy_stock(&"tech_alpha", 1)
 
 func _on_buy_tech_beta_pressed() -> void:
-	if not _player_actor: return
-	if _player_actor.try_buy_stock(&"tech_beta", 1):
-		_deal_log("[color=green] 购买 tech_beta 数量：%d 成功[/color]" % 1)
-	else:
-		_deal_log("[color=red] 购买 tech_beta 数量：%d 失败[/color]" % 1)
+	_do_buy_stock(&"tech_beta", 1)
 
 func _on_sell_fin_gamma_pressed() -> void:
-	if not _player_actor: return
-	if _player_actor.try_sell_stock(&"fin_gamma", 1):
-		_deal_log("[color=green] 卖出 fin_gama 数量：%d 成功[/color]" % 1)
-	else:
-		_deal_log("[color=red] 卖出 fin_gama 数量：%d 失败[/color]" % 1)
+	_do_sell_stock(&"fin_gamma", 1)
 
 func _on_sell_tech_alpha_pressed() -> void:
-	if not _player_actor: return
-	if _player_actor.try_sell_stock(&"tech_alpha", 1):
-		_deal_log("[color=green] 卖出 tech_alpha 数量：%d 成功[/color]" % 1)
-	else:
-		_deal_log("[color=red] 卖出 tech_alpha 数量：%d 失败[/color]" % 1)
+	_do_sell_stock(&"tech_alpha", 1)
 
 func _on_sell_tech_beta_pressed() -> void:
-	if not _player_actor: return
-	if _player_actor.try_sell_stock(&"tech_beta", 1):
-		_deal_log("[color=green] 卖出 tech_beta 数量：%d 成功[/color]" % 1)
+	_do_sell_stock(&"tech_beta", 1)
+
+## 买入股票：主机直接执行，客户端走 RPC
+func _do_buy_stock(stock_id: StringName, quantity: int) -> void:
+	if _local_multiplayer_id == &"": return
+	if multiplayer.is_server():
+		if _player_actor and _player_actor.try_buy_stock(stock_id, quantity):
+			_deal_log("[color=green] 购买 %s 数量：%d 成功[/color]" % [stock_id, quantity])
+		else:
+			_deal_log("[color=red] 购买 %s 数量：%d 失败[/color]" % [stock_id, quantity])
 	else:
-		_deal_log("[color=red] 卖出 tech_beta 数量：%d 失败[/color]" % 1)
+		turn_manager.request_buy_stock.rpc_id(1, _local_multiplayer_id, stock_id, quantity)
+
+## 卖出股票：主机直接执行，客户端走 RPC
+func _do_sell_stock(stock_id: StringName, quantity: int) -> void:
+	if _local_multiplayer_id == &"": return
+	if multiplayer.is_server():
+		if _player_actor and _player_actor.try_sell_stock(stock_id, quantity):
+			_deal_log("[color=green] 卖出 %s 数量：%d 成功[/color]" % [stock_id, quantity])
+		else:
+			_deal_log("[color=red] 卖出 %s 数量：%d 失败[/color]" % [stock_id, quantity])
+	else:
+		turn_manager.request_sell_stock.rpc_id(1, _local_multiplayer_id, stock_id, quantity)
 
 func _on_open_server_pressed() -> void:
 	MultiplayerHandlerNode.create_server()
+	_local_multiplayer_id = &"player_1"
 	start_game_button.disabled = false
 
 func _on_open_client_pressed() -> void:
 	MultiplayerHandlerNode.create_client()
+	multiplayer.connected_to_server.connect(func():
+		_local_multiplayer_id = StringName("player_" + str(multiplayer.get_unique_id()))
+	, CONNECT_ONE_SHOT)
 
 func _on_start_game_pressed() -> void:
 	if not multiplayer.is_server(): return
 	_update_stock_display()
-	if _local_player_node:
+	if _local_multiplayer_id != &"":
 		_update_assets_display()
 	turn_manager.start_game()
 	start_game_button.disabled = true
@@ -517,7 +588,7 @@ func _on_player_turn_started(player_id: StringName) -> void:
 	actor_label.text = "当前行动者：玩家 %s" % player_id
 	phase_label.text = "阶段：玩家回合"
 	_log("[color=green]【玩家 %s 回合】开始[/color]" % player_id)
-	var is_local := _local_player_node != null and _local_player_node.multiplayer_id == player_id
+	var is_local := _local_multiplayer_id != &"" and _local_multiplayer_id == player_id
 	_set_action_buttons_disabled(not is_local)
 
 ## 玩家回合结束：禁用所有按钮
@@ -575,9 +646,9 @@ func _update_stock_display() -> void:
 ## ── 资产面板显示 ────────────────────────────────────────────────────────
 
 func _update_assets_display() -> void:
-	if _local_player_node == null : return
-	var cash = _player_state.cash
-	var holdings = _player_state.holdings
+	if _local_multiplayer_id == &"": return
+	var cash = _local_cash
+	var holdings = _local_holdings
 	var total_value: float = cash
 	var assets_list_text: String = ""
 	for stock_id in holdings.keys():
@@ -589,6 +660,24 @@ func _update_assets_display() -> void:
 	cash_label.text = "现金：%.2f" % cash
 	assets_list.text = assets_list_text
 
+
+## ── 文章发表日志（主机和客户端共用） ────────────────────────────────────
+
+func _log_article_published(player_id: StringName, data: Dictionary, channel: Enums.Channel) -> void:
+	var type_name: String = Enums.ArticleType.keys()[data.get("article_type", 0)]
+	var dir_name: String = Enums.Bias.keys()[data.get("direction", 0)]
+	var impact: int = data.get("final_impact", 0)
+	var credibility: int = data.get("final_credibility", 0)
+	var industry: String = data.get("target_industry", "")
+	var sentiment_value: int = impact * (1 if data.get("direction", 0) == Enums.Bias.BULLISH else -1)
+	var channel_name: String = Enums.Channel.keys()[channel]
+
+	_log("[color=yellow]  ★ 玩家 %s 发表文章！[/color]" % player_id)
+	_log("    文章ID: %s" % data.get("article_id", ""))
+	_log("    类型: %s | 立场: %s" % [type_name, dir_name])
+	_log("    影响力: %d | 可信度(持续回合): %d" % [impact, credibility])
+	_log("    情绪效果: %+d | 目标行业: %s" % [sentiment_value, industry if industry != "" else "宏观"])
+	_log("    发表渠道: %s" % channel_name)
 
 ## ── 工具方法 ──────────────────────────────────────────────────────────
 

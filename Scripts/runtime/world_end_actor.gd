@@ -43,7 +43,7 @@ func _run_phase(phase: Enums.WorldPhase, _ctx: Dictionary) -> void:
 
 ## 结算草稿文章新鲜度：每篇 -1，归零时从草稿区移除。
 func _settle_articles(_ctx: Dictionary) -> void:
-	var player_states: Array[PlayerState] = _ctx.get("player_states")
+	var player_states: Array = _ctx.get("player_states", [])
 	if player_states.is_empty():
 		print("[WorldEndActor]   → 玩家状态列表为空，跳过文章结算")
 		return

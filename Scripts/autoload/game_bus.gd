@@ -26,11 +26,18 @@ signal player_turn_started(player_id: StringName)
 signal player_turn_ended(player_id: StringName)
 signal player_ended_turn(player_id: StringName)
 signal action_points_changed(player_id: StringName, new_val: int, max_val: int)
-signal assets_changed(player_id: StringName)
+signal assets_changed(player_id: StringName, cash: float, holdings: Dictionary)
+
+## 客户端操作请求信号（RPC → 主机 → 信号 → test_turn 执行实际逻辑）
+signal craft_requested(player_id: StringName, turn: int)
+signal publish_requested(player_id: StringName)
 
 ## 文章信号
 signal article_composed(player_id: StringName, article: Article)
 signal article_published(player_id: StringName, article: Article, channel: Enums.Channel)
+## 客户端文章同步信号（携带序列化 Dictionary 而非 Article 对象）
+signal article_composed_synced(player_id: StringName, data: Dictionary)
+signal article_published_synced(player_id: StringName, data: Dictionary, channel: int)
 signal article_busted(article: Article)
 signal article_expired(article: Article)
 
@@ -41,7 +48,7 @@ signal sentiment_modifier_applied(stock_id: StringName, mod: SentimentModifier)
 signal price_modifier_applied(stock_id: StringName, mod: PriceModifier)
 
 ## 玩家信号
-signal player_trade(player_id: StringName, stock_id: StringName, quantity: int, is_buy: bool)
+signal player_trade(player_id: StringName, stock_id: StringName, quantity: int, is_buy: bool, success: bool)
 signal reputation_changed(player_id: StringName, old_val: int, new_val: int)
 
 ## 环境事件信号

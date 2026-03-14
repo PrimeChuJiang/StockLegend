@@ -56,7 +56,7 @@ func buy_stock(stock_id: StringName, quantity: int, price: float) -> bool:
 	cash -= total_cost
 	trade_count += 1
 	holdings[stock_id] = holdings.get(stock_id, 0) + quantity
-	GameBus.assets_changed.emit(player_id)
+	GameBus.assets_changed.emit(player_id, cash, holdings.duplicate())
 	return true
 
 ## 卖出股票
@@ -70,5 +70,5 @@ func sell_stock(stock_id: StringName, quantity: int, price: float) -> bool:
 	if holdings[stock_id] == 0:
 		holdings.erase(stock_id)
 	trade_count += 1
-	GameBus.assets_changed.emit(player_id)
+	GameBus.assets_changed.emit(player_id, cash, holdings.duplicate())
 	return true
