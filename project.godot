@@ -21,6 +21,7 @@ GameBus="*res://Scripts/autoload/game_bus.gd"
 StockManager="*res://Scripts/systems/stock_manager.gd"
 ItemContainerSystem="*res://addons/ContainerSystem/core/ContainerSystem.gd"
 TagManager="*res://addons/ContainerSystem/core/TagManager.gd"
+MultiplayerHandlerNode="*res://Scripts/autoload/multiplayer_handler.gd"
 
 [container_system]
 

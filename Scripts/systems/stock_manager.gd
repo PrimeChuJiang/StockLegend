@@ -84,6 +84,9 @@ func apply_sentiment_modifier(mod: SentimentModifier) -> void:
 			var stock_mod := mod.clone()
 			stock.add_modifier(stock_mod)
 			GameBus.sentiment_modifier_applied.emit(stock_id, stock_mod)
+			if _is_network_server():
+				_sync_sentiment_modifier_applied.rpc(
+					stock_id, stock_mod.source_id, stock_mod.value, stock_mod.remaining_turns)
 			print("[StockManager] 情绪修改器 → %s | 来源: %s | 值: %+d | 持续: %d 回合" % [
 				stock_id, stock_mod.source_id, stock_mod.value, stock_mod.remaining_turns])
 
@@ -98,6 +101,8 @@ func apply_price_modifier(mod: PriceModifier) -> void:
 			stock.apply_price_modifier(mod)
 			if stock.current_price != old_price:
 				GameBus.stock_price_changed.emit(stock_id, old_price, stock.current_price)
+				if _is_network_server():
+					_sync_stock_price_changed.rpc(stock_id, old_price, stock.current_price)
 			print("[StockManager] 价格修改器 → %s | %s(%s) | %.2f → %.2f" % [
 				stock_id, mod.op, mod.value, old_price, stock.current_price])
 
@@ -127,6 +132,8 @@ func settle_turn() -> void:
 
 		if stock.current_price != old_price:
 			GameBus.stock_price_changed.emit(stock_id, old_price, stock.current_price)
+			if _is_network_server():
+				_sync_stock_price_changed.rpc(stock_id, old_price, stock.current_price)
 			print("[StockManager] 结算 %s | 情绪: %+d | %.2f → %.2f" % [
 				stock_id, stock.get_sentiment(), old_price, stock.current_price])
 
@@ -134,4 +141,36 @@ func settle_turn() -> void:
 		if stock.should_delist():
 			stock.is_delisted = true
 			GameBus.stock_delisted.emit(stock_id)
+			if _is_network_server():
+				_sync_stock_delisted.rpc(stock_id)
 			print("[StockManager] %s 已退市！" % stock_id)
+
+## ── 网络同步 ────────────────────────────────────────────────────────
+
+func _is_network_server() -> bool:
+	return multiplayer.has_multiplayer_peer() and multiplayer.is_server()
+
+@rpc("authority", "reliable")
+func _sync_stock_price_changed(stock_id: StringName, old_price: float, new_price: float) -> void:
+	var stock := get_stock(stock_id)
+	if stock:
+		stock.current_price = new_price
+	GameBus.stock_price_changed.emit(stock_id, old_price, new_price)
+
+@rpc("authority", "reliable")
+func _sync_stock_delisted(stock_id: StringName) -> void:
+	var stock := get_stock(stock_id)
+	if stock:
+		stock.is_delisted = true
+	GameBus.stock_delisted.emit(stock_id)
+
+@rpc("authority", "reliable")
+func _sync_sentiment_modifier_applied(stock_id: StringName, source_id: StringName, value: int, remaining: int) -> void:
+	var mod := SentimentModifier.new()
+	mod.source_id = source_id
+	mod.value = value
+	mod.remaining_turns = remaining
+	var stock := get_stock(stock_id)
+	if stock:
+		stock.add_modifier(mod)
+	GameBus.sentiment_modifier_applied.emit(stock_id, mod)

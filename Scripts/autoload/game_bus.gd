@@ -1,5 +1,10 @@
 extends Node
 
+## 多人游戏信号
+signal player_connected(player_node: PlayerNode)
+signal player_disconnected(player_node: PlayerNode)
+signal server_created()
+
 ## 回合信号
 signal turn_started(turn: int)
 signal turn_ended(turn: int)
@@ -17,13 +22,15 @@ signal world_end_phase_started(phase: Enums.WorldPhase)
 signal world_end_phase_ended(phase: Enums.WorldPhase)
 
 ## 玩家行动信号
-signal player_ended_turn
-signal action_points_changed(new_val: int, max_val: int)
-signal assets_changed()
+signal player_turn_started(player_id: StringName)
+signal player_turn_ended(player_id: StringName)
+signal player_ended_turn(player_id: StringName)
+signal action_points_changed(player_id: StringName, new_val: int, max_val: int)
+signal assets_changed(player_id: StringName)
 
 ## 文章信号
-signal article_composed(article: Article)
-signal article_published(article: Article, channel: Enums.Channel)
+signal article_composed(player_id: StringName, article: Article)
+signal article_published(player_id: StringName, article: Article, channel: Enums.Channel)
 signal article_busted(article: Article)
 signal article_expired(article: Article)
 
@@ -34,8 +41,8 @@ signal sentiment_modifier_applied(stock_id: StringName, mod: SentimentModifier)
 signal price_modifier_applied(stock_id: StringName, mod: PriceModifier)
 
 ## 玩家信号
-signal player_trade(stock_id: StringName, quantity: int, is_buy: bool)
-signal reputation_changed(old_val: int, new_val: int)
+signal player_trade(player_id: StringName, stock_id: StringName, quantity: int, is_buy: bool)
+signal reputation_changed(player_id: StringName, old_val: int, new_val: int)
 
 ## 环境事件信号
 ## 携带 ScheduleEventConfig，UI 层可读取 preview_name/reveal_name 以及 event_cards

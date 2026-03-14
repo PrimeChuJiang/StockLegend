@@ -27,11 +27,25 @@ extends Node
 @onready var sell_tech_alpha_button: Button = $CanvasLayer/DealPanel/VBoxContainer/SellTechAlpha
 @onready var sell_tech_beta_button: Button = $CanvasLayer/DealPanel/VBoxContainer/SellTechBeta
 @onready var sell_fin_gamma_button: Button = $CanvasLayer/DealPanel/VBoxContainer/SellFinGamma
+@onready var open_server_button: Button = $CanvasLayer/MultiplayerPanel/HBoxContainer/OpenServer
+@onready var open_client_button: Button = $CanvasLayer/MultiplayerPanel/HBoxContainer/OpenClient
+@onready var start_game_button: Button = $CanvasLayer/MultiplayerPanel/HBoxContainer/StartGame
 
-var _player_state: PlayerState
-var _world_start_actor: WorldStartActor
-var _player_actor: PlayerActor
-var _world_end_actor: WorldEndActor
+
+
+var _player_state: PlayerState :
+	get:
+		if _local_player_node == null:
+			return null
+		return _local_player_node.player_state
+var _player_actor: PlayerActor :
+	get:
+		if _local_player_node == null:
+			return null
+		return _local_player_node.player_actor
+
+## ── 多人端玩家 ──────────────────────────────────────────────────────
+var _local_player_node : PlayerNode = null
 
 ## ── 测试用行业标签 ──────────────────────────────────────────────────────
 var _tag_industry: Tag
@@ -53,8 +67,9 @@ func _ready() -> void:
 	_connect_signals()
 	_setup_actors()
 	_update_stock_display()
-	_update_assets_display()
-	turn_manager.start_game()
+	## 监听 Players 容器的子节点变化（主机和客户端都会触发）
+	$Players.child_entered_tree.connect(_on_player_node_added)
+	$Players.child_exiting_tree.connect(_on_player_node_removed)
 
 ## ── 行业标签构建 ────────────────────────────────────────────────────────
 
@@ -138,6 +153,10 @@ func _build_test_cards() -> void:
 ## ── 信号连接 ────────────────────────────────────────────────────────────
 
 func _connect_signals() -> void:
+	## 玩家回合信号（带 player_id，用于按钮启用/禁用）
+	GameBus.player_turn_started.connect(_on_player_turn_started)
+	GameBus.player_turn_ended.connect(_on_player_turn_ended)
+
 	## 回合信号
 	GameBus.turn_started.connect(func(n: int) -> void:
 		turn_label.text = "回合：%d" % n
@@ -167,16 +186,17 @@ func _connect_signals() -> void:
 	GameBus.world_end_phase_ended.connect(func(phase: Enums.WorldPhase) -> void:
 		_log("  [color=purple]■ 结算阶段结束：%s[/color]" % Enums.WorldPhase.keys()[phase])
 		_update_stock_display()
-		_update_assets_display())
+		if _local_player_node:
+			_update_assets_display())
 
 	## 行动值信号
-	GameBus.action_points_changed.connect(func(new_val: int, max_val: int) -> void:
+	GameBus.action_points_changed.connect(func(_player_id: StringName, new_val: int, max_val: int) -> void:
 		ap_label.text = "行动值：%d / %d" % [new_val, max_val]
-		_log("  行动值变化：%d / %d" % [new_val, max_val]))
+		_log("  玩家 %s 行动值变化：%d / %d" % [_player_id, new_val, max_val]))
 
 	## 文章信号
-	GameBus.article_composed.connect(func(article: Article) -> void:
-		_log("[color=yellow]  ★ 文章合成完成！[/color]")
+	GameBus.article_composed.connect(func(_player_id: StringName, article: Article) -> void:
+		_log("[color=yellow]  ★ 玩家 %s 文章合成完成！[/color]" % _player_id)
 		_log("    ID: %s" % article.article_id)
 		_log("    素材: %s" % _material_names(article.material_cards))
 		_log("    方法: %s" % _method_names(article.method_cards))
@@ -219,9 +239,11 @@ func _connect_signals() -> void:
 		_stock_log("[color=red][b]退市！ %s[/b][/color]" % stock_id)
 		_update_stock_display())
 	
-	GameBus.assets_changed.connect(func() -> void:
-		_update_assets_display()
-	)	
+	GameBus.assets_changed.connect(func(_player_id: StringName) -> void:
+		if _local_player_node == null : return
+		if _player_id == _local_player_node.multiplayer_id:
+			_update_assets_display()
+		_log("  玩家 %s 资产更新" % _player_id))	
 
 	## 按钮
 	gather_button.pressed.connect(_on_gather_pressed)
@@ -235,6 +257,9 @@ func _connect_signals() -> void:
 	sell_fin_gamma_button.pressed.connect(_on_sell_fin_gamma_pressed)
 	sell_tech_alpha_button.pressed.connect(_on_sell_tech_alpha_pressed)
 	sell_tech_beta_button.pressed.connect(_on_sell_tech_beta_pressed)
+	open_server_button.pressed.connect(_on_open_server_pressed)
+	open_client_button.pressed.connect(_on_open_client_pressed)
+	start_game_button.pressed.connect(_on_start_game_pressed)
 
 ## ── 测试日程构建 ────────────────────────────────────────────────────────
 
@@ -294,35 +319,89 @@ func _build_test_schedule() -> ScheduleData:
 ## ── Actor 设置 ──────────────────────────────────────────────────────────
 
 func _setup_actors() -> void:
-	_player_state = PlayerState.new()
-	_world_start_actor = WorldStartActor.new()
-	_player_actor = PlayerActor.new(_player_state)
-	_world_end_actor = WorldEndActor.new()
-
+	# _player_state = PlayerState.new()
+	# _world_start_actor = WorldStartActor.new()
+	# _player_actor = PlayerActor.new(&"player_id_1", _player_state)
+	# _world_end_actor = WorldEndActor.new()
 	var schedule := _build_test_schedule()
-	turn_manager.actors = [_world_start_actor, _player_actor, _world_end_actor]
+	# turn_manager.actors = [_world_start_actor, _player_actor, _world_end_actor]
 	turn_manager.setup({
 		"scene_tree": get_tree(),
 		"schedule": schedule,
-		"player_state": _player_state,
+		"player_states": [],
 	})
+
+	# var player_a := PlayerNode.new()
+	# player_a.setup(1)
+	# turn_manager.add_player(player_a)
+	# _player_state = player_a.player_state
+	# _player_actor = player_a.player_actor
+	# var player_b := PlayerNode.new()
+	# player_b.setup(2)
+	# turn_manager.add_player(player_b)
+	# var player_c := PlayerNode.new()
+	# player_c.setup(3)
+	# turn_manager.add_player(player_c)
 
 	## 监听事件揭示 → 自动创建情绪修改器分发到市场
 	GameBus.event_revealed.connect(_on_event_apply_modifiers)
 	GameBus.breaking_event_triggered.connect(_on_event_apply_modifiers)
 
 ## 环境事件触发时，将其环境牌转换为情绪修改器并分发。
+## 仅主机执行（客户端通过 RPC 接收结果）。
 func _on_event_apply_modifiers(cfg: ScheduleEventConfig) -> void:
+	if not multiplayer.is_server():
+		return
 	for env_card: EnviromentCardData in cfg.event_cards:
+		if env_card == null:
+			continue
 		var mod := SentimentModifier.from_environment(env_card)
 		StockManager.apply_sentiment_modifier(mod)
+
+## ── 多玩家事件 ──────────────────────────────────────────────────────────
+
+## Players 容器子节点加入时触发（主机：spawner add_child 后；客户端：MultiplayerSpawner 自动复制后）
+func _on_player_node_added(node: Node) -> void:
+	if not node is PlayerNode:
+		return
+	var player_node: PlayerNode = node
+	## 主机端：setup() 已执行完，数据立即可用
+	if multiplayer.is_server():
+		_log("[color=yellow]  玩家 %s 已加入[/color]" % player_node.multiplayer_id)
+		turn_manager.add_player(player_node)
+		if player_node.peer_id == multiplayer.get_unique_id():
+			_local_player_node = player_node
+			_update_assets_display()
+	else:
+		## 客户端：sync_player_data 还没到，等 sync_completed 再识别
+		player_node.sync_completed.connect(
+			func(): _on_client_player_synced(player_node), CONNECT_ONE_SHOT)
+
+## 客户端：PlayerNode 同步完成后，识别本地玩家
+func _on_client_player_synced(player_node: PlayerNode) -> void:
+	_log("[color=yellow]  玩家 %s 已同步[/color]" % player_node.multiplayer_id)
+	if player_node.peer_id == multiplayer.get_unique_id():
+		_local_player_node = player_node
+		_update_assets_display()
+
+func _on_player_node_removed(node: Node) -> void:
+	if not node is PlayerNode:
+		return
+	var player_node: PlayerNode = node
+	_log("[color=yellow]  玩家节点已移除: %s[/color]" % player_node.name)
+	if multiplayer.is_server():
+		turn_manager.remove_player(player_node)
+	if player_node == _local_player_node:
+		_local_player_node = null
 
 ## ── 按钮事件 ──────────────────────────────────────────────────────────
 
 func _on_gather_pressed() -> void:
+	if not _player_actor: return
 	_player_actor.try_gather_material({})
 
 func _on_craft_pressed() -> void:
+	if not _player_actor: return
 	var materials: Array[MaterialCardData] = [_mat_expose, _mat_data]
 	var methods: Array[WritingMethodCardData] = [_method_deep_dig]
 	var article := _player_actor.try_craft_article(materials, methods, turn_manager.turn_number)
@@ -331,6 +410,7 @@ func _on_craft_pressed() -> void:
 		article.target_industry = _tag_tech
 
 func _on_publish_pressed() -> void:
+	if not _player_state: return
 	if _player_state.draft_articles.is_empty():
 		_log("[color=red]  没有可发表的草稿[/color]")
 		return
@@ -352,84 +432,112 @@ func _on_price_mod_pressed() -> void:
 	_stock_log("[color=orange]宏观价格修改器：全市场 ×0.95[/color]")
 
 func _on_end_turn_pressed() -> void:
+	if not _local_player_node: return
 	_log("[color=gray]  → 玩家点击结束回合[/color]")
-	GameBus.player_ended_turn.emit()
+	## 主机直接 emit；客户端通过 RPC 发给主机
+	if multiplayer.is_server():
+		GameBus.player_ended_turn.emit(_local_player_node.multiplayer_id)
+	else:
+		turn_manager.request_end_turn.rpc_id(1, _local_player_node.multiplayer_id)
 
 func _on_buy_fin_gamma_pressed() -> void:
+	if not _player_actor: return
 	if _player_actor.try_buy_stock(&"fin_gamma", 1):
 		_deal_log("[color=green] 购买 fin_gama 数量：%d 成功[/color]" % 1)
 	else:
 		_deal_log("[color=red] 购买 fin_gama 数量：%d 失败[/color]" % 1)
 
 func _on_buy_tech_alpha_pressed() -> void:
+	if not _player_actor: return
 	if _player_actor.try_buy_stock(&"tech_alpha", 1):
 		_deal_log("[color=green] 购买 tech_alpha 数量：%d 成功[/color]" % 1)
 	else:
 		_deal_log("[color=red] 购买 tech_alpha 数量：%d 失败[/color]" % 1)
 
 func _on_buy_tech_beta_pressed() -> void:
+	if not _player_actor: return
 	if _player_actor.try_buy_stock(&"tech_beta", 1):
 		_deal_log("[color=green] 购买 tech_beta 数量：%d 成功[/color]" % 1)
 	else:
 		_deal_log("[color=red] 购买 tech_beta 数量：%d 失败[/color]" % 1)
 
 func _on_sell_fin_gamma_pressed() -> void:
+	if not _player_actor: return
 	if _player_actor.try_sell_stock(&"fin_gamma", 1):
 		_deal_log("[color=green] 卖出 fin_gama 数量：%d 成功[/color]" % 1)
 	else:
 		_deal_log("[color=red] 卖出 fin_gama 数量：%d 失败[/color]" % 1)
 
 func _on_sell_tech_alpha_pressed() -> void:
+	if not _player_actor: return
 	if _player_actor.try_sell_stock(&"tech_alpha", 1):
 		_deal_log("[color=green] 卖出 tech_alpha 数量：%d 成功[/color]" % 1)
 	else:
 		_deal_log("[color=red] 卖出 tech_alpha 数量：%d 失败[/color]" % 1)
 
 func _on_sell_tech_beta_pressed() -> void:
+	if not _player_actor: return
 	if _player_actor.try_sell_stock(&"tech_beta", 1):
 		_deal_log("[color=green] 卖出 tech_beta 数量：%d 成功[/color]" % 1)
 	else:
 		_deal_log("[color=red] 卖出 tech_beta 数量：%d 失败[/color]" % 1)
+
+func _on_open_server_pressed() -> void:
+	MultiplayerHandlerNode.create_server()
+	start_game_button.disabled = false
+
+func _on_open_client_pressed() -> void:
+	MultiplayerHandlerNode.create_client()
+
+func _on_start_game_pressed() -> void:
+	if not multiplayer.is_server(): return
+	_update_stock_display()
+	if _local_player_node:
+		_update_assets_display()
+	turn_manager.start_game()
+	start_game_button.disabled = true
 ## ── Actor 回合事件 ────────────────────────────────────────────────────
 
 func _on_actor_turn_started(actor_type: Enums.ActorType) -> void:
-	var is_player := actor_type == Enums.ActorType.PLAYER
-	gather_button.disabled = not is_player
-	craft_button.disabled = not is_player
-	publish_button.disabled = not is_player
-	price_mod_button.disabled = not is_player
-	end_turn_button.disabled = not is_player
-	buy_fin_gamma_button.disabled = not is_player or StockManager.get_stock(&"fin_gamma").is_delisted
-	buy_tech_alpha_button.disabled = not is_player or StockManager.get_stock(&"tech_alpha").is_delisted
-	buy_tech_beta_button.disabled = not is_player or StockManager.get_stock(&"tech_beta").is_delisted
-	sell_fin_gamma_button.disabled = not is_player or StockManager.get_stock(&"fin_gamma").is_delisted
-	sell_tech_alpha_button.disabled = not is_player or StockManager.get_stock(&"tech_alpha").is_delisted
-	sell_tech_beta_button.disabled = not is_player or StockManager.get_stock(&"tech_beta").is_delisted
 	match actor_type:
 		Enums.ActorType.WORLD:
 			actor_label.text = "当前行动者：世界"
 			phase_label.text = "阶段：—"
 			_log("[color=yellow]【世界回合】开始[/color]")
 		Enums.ActorType.PLAYER:
-			actor_label.text = "当前行动者：玩家"
-			phase_label.text = "阶段：玩家回合"
-			_log("[color=green]【玩家回合】开始 — 可用行动值: %d[/color]" % _player_state.action_points)
 			_update_stock_display()
 
 func _on_actor_turn_ended(actor_type: Enums.ActorType) -> void:
-	gather_button.disabled = true
-	craft_button.disabled = true
-	publish_button.disabled = true
-	price_mod_button.disabled = true
-	end_turn_button.disabled = true
-	sell_fin_gamma_button.disabled = true
-	sell_tech_alpha_button.disabled = true
-	sell_tech_beta_button.disabled = true
 	match actor_type:
 		Enums.ActorType.WORLD:
 			_log("[color=yellow]【世界回合】结束[/color]")
-		Enums.ActorType.PLAYER:
-			_log("[color=green]【玩家回合】结束[/color]")
+
+## 玩家回合开始（带 player_id）：只有轮到本地玩家时才启用按钮
+func _on_player_turn_started(player_id: StringName) -> void:
+	actor_label.text = "当前行动者：玩家 %s" % player_id
+	phase_label.text = "阶段：玩家回合"
+	_log("[color=green]【玩家 %s 回合】开始[/color]" % player_id)
+	var is_local := _local_player_node != null and _local_player_node.multiplayer_id == player_id
+	_set_action_buttons_disabled(not is_local)
+
+## 玩家回合结束：禁用所有按钮
+func _on_player_turn_ended(player_id: StringName) -> void:
+	_log("[color=green]【玩家 %s 回合】结束[/color]" % player_id)
+	_set_action_buttons_disabled(true)
+
+## 统一设置所有操作按钮的 disabled 状态
+func _set_action_buttons_disabled(disabled: bool) -> void:
+	gather_button.disabled = disabled
+	craft_button.disabled = disabled
+	publish_button.disabled = disabled
+	price_mod_button.disabled = disabled
+	end_turn_button.disabled = disabled
+	buy_fin_gamma_button.disabled = disabled or StockManager.get_stock(&"fin_gamma").is_delisted
+	buy_tech_alpha_button.disabled = disabled or StockManager.get_stock(&"tech_alpha").is_delisted
+	buy_tech_beta_button.disabled = disabled or StockManager.get_stock(&"tech_beta").is_delisted
+	sell_fin_gamma_button.disabled = disabled or StockManager.get_stock(&"fin_gamma").is_delisted
+	sell_tech_alpha_button.disabled = disabled or StockManager.get_stock(&"tech_alpha").is_delisted
+	sell_tech_beta_button.disabled = disabled or StockManager.get_stock(&"tech_beta").is_delisted
 
 ## ── 股票面板显示 ────────────────────────────────────────────────────────
 
@@ -467,6 +575,7 @@ func _update_stock_display() -> void:
 ## ── 资产面板显示 ────────────────────────────────────────────────────────
 
 func _update_assets_display() -> void:
+	if _local_player_node == null : return
 	var cash = _player_state.cash
 	var holdings = _player_state.holdings
 	var total_value: float = cash

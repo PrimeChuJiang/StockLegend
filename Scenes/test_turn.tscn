@@ -1,8 +1,10 @@
-[gd_scene load_steps=4 format=3 uid="uid://d2sldqtw6nd27"]
+[gd_scene load_steps=6 format=3 uid="uid://d2sldqtw6nd27"]
 
 [ext_resource type="Script" uid="uid://kltrflr7otjf" path="res://Scripts/test/test_turn.gd" id="1"]
 [ext_resource type="Script" uid="uid://bf0juql84ad0i" path="res://Scripts/systems/turn_manager.gd" id="2"]
 [ext_resource type="Script" uid="uid://cuhyqxj1xs643" path="res://Scripts/systems/schedule_manager.gd" id="3_unfn8"]
+[ext_resource type="Script" uid="uid://qb52doqcjhh3" path="res://Scripts/runtime/Node/multiplayer_spawner.gd" id="4_fk4uc"]
+[ext_resource type="PackedScene" uid="uid://bvaa7f4hdbc3f" path="res://Scenes/Player/Player.tscn" id="5_dnr2b"]
 
 [node name="TestTurn" type="Node"]
 script = ExtResource("1")
@@ -87,7 +89,7 @@ text = "结束玩家回合"
 
 [node name="StockPanel" type="Panel" parent="CanvasLayer"]
 offset_left = 420.0
-offset_top = 10.0
+offset_top = 135.0
 offset_right = 820.0
 offset_bottom = 640.0
 
@@ -109,7 +111,7 @@ text = "股票市场"
 layout_mode = 2
 
 [node name="StockInfoBox" type="RichTextLabel" parent="CanvasLayer/StockPanel/VBox"]
-custom_minimum_size = Vector2(0, 250)
+custom_minimum_size = Vector2(0, 200)
 layout_mode = 2
 size_flags_vertical = 3
 bbcode_enabled = true
@@ -122,7 +124,7 @@ layout_mode = 2
 text = "市场事件日志"
 
 [node name="StockLogBox" type="RichTextLabel" parent="CanvasLayer/StockPanel/VBox"]
-custom_minimum_size = Vector2(0, 250)
+custom_minimum_size = Vector2(0, 200)
 layout_mode = 2
 size_flags_vertical = 3
 bbcode_enabled = true
@@ -216,3 +218,37 @@ text = "卖出科技Beta * 1"
 layout_mode = 2
 disabled = true
 text = "卖出金融Gamma * 1"
+
+[node name="MultiplayerPanel" type="Panel" parent="CanvasLayer"]
+offset_left = 420.0
+offset_top = 10.0
+offset_right = 820.0
+offset_bottom = 127.0
+
+[node name="HBoxContainer" type="HBoxContainer" parent="CanvasLayer/MultiplayerPanel"]
+layout_mode = 0
+offset_left = 14.0
+offset_top = 14.0
+offset_right = 386.0
+offset_bottom = 105.0
+
+[node name="OpenServer" type="Button" parent="CanvasLayer/MultiplayerPanel/HBoxContainer"]
+layout_mode = 2
+text = "创建游戏"
+
+[node name="OpenClient" type="Button" parent="CanvasLayer/MultiplayerPanel/HBoxContainer"]
+layout_mode = 2
+text = "加入游戏"
+
+[node name="StartGame" type="Button" parent="CanvasLayer/MultiplayerPanel/HBoxContainer"]
+layout_mode = 2
+disabled = true
+text = "开始游戏"
+
+[node name="Players" type="Node" parent="."]
+
+[node name="MultiplayerSpawner" type="MultiplayerSpawner" parent="."]
+_spawnable_scenes = PackedStringArray("uid://bvaa7f4hdbc3f")
+spawn_path = NodePath("../Players")
+script = ExtResource("4_fk4uc")
+player_scene = ExtResource("5_dnr2b")

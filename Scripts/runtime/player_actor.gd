@@ -13,8 +13,9 @@ extends Actor
 
 var state: PlayerState
 
-func _init(player_state: PlayerState) -> void:
-	actor_id = &"player"
+func _init(p_player_id: StringName, player_state: PlayerState) -> void:
+	actor_id = p_player_id
+	player_state.player_id = p_player_id
 	actor_type = Enums.ActorType.PLAYER
 	state = player_state
 
@@ -22,12 +23,17 @@ func _init(player_state: PlayerState) -> void:
 func execute_turn(_ctx: Dictionary) -> void:
 	state.reset_turn_resources()
 	GameBus.actor_turn_started.emit(Enums.ActorType.PLAYER)
-	GameBus.action_points_changed.emit(state.action_points, state.max_action_points)
-	print("[PlayerActor] 玩家回合开始，行动值: %d/%d" % [state.action_points, state.max_action_points])
+	GameBus.player_turn_started.emit(actor_id)
+	GameBus.action_points_changed.emit(actor_id, state.action_points, state.max_action_points)
+	print("[PlayerActor] 玩家 %s 回合开始，行动值: %d/%d" % [actor_id, state.action_points, state.max_action_points])
 
-	await GameBus.player_ended_turn
+	while true:
+		var ended_id = await GameBus.player_ended_turn
+		if ended_id == actor_id:
+			break
 
-	print("[PlayerActor] 玩家回合结束")
+	print("[PlayerActor] 玩家 %s 回合结束" % actor_id)
+	GameBus.player_turn_ended.emit(actor_id)
 	GameBus.actor_turn_ended.emit(Enums.ActorType.PLAYER)
 
 ## ── 消耗行动值的操作 ──────────────────────────────────────────────────
@@ -54,7 +60,7 @@ func try_craft_article(
 		return null
 	var article := ArticleSystem.compose(materials, methods, turn, state.draft_articles.size())
 	state.draft_articles.append(article)
-	GameBus.article_composed.emit(article)
+	GameBus.article_composed.emit(state.player_id, article)
 	print("[PlayerActor] 文章合成完成: %s → %s" % [article.article_id, article.get_summary()])
 	return article
 
@@ -93,7 +99,7 @@ func publish_article(article: Article, channel: Enums.Channel, _ctx: Dictionary)
 	article.is_published = true
 	print("[PlayerActor] 发表文章 → 渠道: %s | %s" % [
 		Enums.Channel.keys()[channel], article.get_summary()])
-	GameBus.article_published.emit(article, channel)
+	GameBus.article_published.emit(actor_id, article, channel)
 
 ## ── 内部工具 ──────────────────────────────────────────────────────────
 
@@ -102,5 +108,5 @@ func _try_spend_ap(cost: int) -> bool:
 		print("[PlayerActor] 行动值不足，需要 %d，当前 %d" % [cost, state.action_points])
 		return false
 	state.action_points -= cost
-	GameBus.action_points_changed.emit(state.action_points, state.max_action_points)
+	GameBus.action_points_changed.emit(actor_id, state.action_points, state.max_action_points)
 	return true
