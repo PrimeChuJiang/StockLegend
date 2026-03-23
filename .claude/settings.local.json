@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(rm:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(find . -name *.gd -o -name *.tscn -o -name *.tres)"
     ]
   }
 }

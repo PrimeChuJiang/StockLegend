@@ -353,7 +353,7 @@ func _build_test_schedule() -> ScheduleData:
 	var mgr := ScheduleManager.new()
 	mgr.scheduled_pool = [cfg_macro, cfg_industry]
 	mgr.breaking_pool = [cfg_breaking]
-	mgr.game_turns = 5
+	mgr.game_turns = 10
 	mgr.breaking_chance = 0.3
 	return mgr.generate()
 
