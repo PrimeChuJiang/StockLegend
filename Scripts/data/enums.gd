@@ -1,57 +1,65 @@
-## 全局枚举定义，所有系统共享的常量集合。
+## 全局枚举定义 v4：竞选大师
 class_name Enums
 
-## 行动者类型：世界 / 玩家 / AI
-enum ActorType { WORLD, PLAYER, AI }
+## 素材类型
+enum MaterialType { RECORD, PROMISE, DIRT, EMOTION }
 
-## 世界阶段：揭示日程事件 / 结算突发事件 / 结算文章新鲜度 / 结算股票价格
-enum WorldPhase { REVEAL_EVENTS, RESOLVE_BREAKING, SETTLE_ARTICLES, RESOLVE_PRICE }
+## 议题
+enum Topic { JOBS, TECH, AGRICULTURE, ECONOMY, EDUCATION, NONE }
 
-## 卡牌类型：普通卡牌 / 瞬发卡牌 / 场地卡牌
-enum CardType { NORMAL, INSTANT, FIELD }
-
-## 素材卡类型：数据 / 谣言 / 爆料 / 观点
-## 决定文章合成后的 ArticleType
-enum MaterialType { DATA, RUMOR, EXPOSE, OPINION }
-
-## 效果触发时机：打出时 / 回合结束时 / 进入场地时 / 离开场地时 / 弃牌时
-enum EffectTrigger { ON_PLAY, ON_TURN_END, ON_FIELD_ENTER, ON_FIELD_EXIT, ON_DISCARD }
-
-## 倾向：看涨 / 看跌 / 中性
-enum Bias { BULLISH, BERISH, NEUTRAL }
-## 环境牌影响层级：宏观 / 产业 / 公司
-enum EventTier { MACRO, INDUSTRY, COMPANY }
-## 发表渠道：自媒体 / 主流媒体 / 匿名论坛 / 付费推广
-enum Channel { SELF_MEDIA, MAINSTREAM, ANONYMOUS, PAID_PROMOTION }
-## 股票波动类型：低波动 / 中波动 / 高波动
-enum Volatility { LOW, MEDIUM, HIGH}
-## 写作方法稀有度：普通 / 稀有 / 罕见
-enum Rarity { COMMON, UNCOMMON, RARE }
-## 修改器运算方式：加法 / 乘法 / 直接设置
-enum ModifierOp { ADD, MULTIPLY, SET }
-
-## 文章类型（由素材组合模式决定）
-enum ArticleType {
-	RESEARCH_REPORT,   # 深度研报：数据+数据+观点
-	INVESTIGATION,     # 调查报道：爆料+数据
-	EXCLUSIVE,         # 惊天独家：谣言+爆料
-	CONSPIRACY,        # 阴谋论：谣言+谣言
-	SERIAL_SCOOP,      # 连环爆料：爆料+爆料
-	EXPERT_COMMENT,    # 专家点评：数据+观点
-	PUBLIC_OPINION,    # 舆论造势：观点+观点
-	GENERAL,           # 一般报道：其他组合
+## 广告类型（10种，由两张素材组合决定）
+enum AdType {
+	RECORD_REPORT,     ## 政绩+政绩 = 执政报告
+	POLICY_BLUEPRINT,  ## 政绩+承诺 = 施政蓝图
+	TOUCHING_STORY,    ## 政绩+煽情 = 感人故事
+	INVESTIGATION,     ## 政绩+黑料 = 调查报告
+	EMPTY_CHECK,       ## 承诺+承诺 = 空头支票
+	CAMPAIGN_SPEECH,   ## 承诺+煽情 = 竞选演说
+	COMPARISON_AD,     ## 承诺+黑料 = 对比广告
+	SCANDAL_COMBO,     ## 黑料+黑料 = 丑闻连环锤
+	FEAR_AD,           ## 黑料+煽情 = 恐惧广告
+	POPULIST_RALLY,    ## 煽情+煽情 = 民粹煽动
 }
 
-## 写作方法效果类型（ArticleSystem 的 dispatch key）
-enum MethodEffectType {
-	IMPACT_ADD,
-	IMPACT_MULTIPLY,
-	CREDIBILITY_ADD,
-	CREDIBILITY_MULTIPLY,
-	BIAS_REVERSE,
-	TYPE_CHANGE_TO_SCOOP,
-	AFFECT_WHOLE_INDUSTRY,
-	TARGETED_GATHER_FREE,
-	FACT_CHECK_PROB_ADD,
-	DURATION_ADD,
-}
+## 素材类型名称
+static func material_name(t: MaterialType) -> String:
+	match t:
+		MaterialType.RECORD: return "政绩"
+		MaterialType.PROMISE: return "承诺"
+		MaterialType.DIRT: return "黑料"
+		MaterialType.EMOTION: return "煽情"
+	return "?"
+
+## 议题名称
+static func topic_name(t: Topic) -> String:
+	match t:
+		Topic.JOBS: return "就业"
+		Topic.TECH: return "科技"
+		Topic.AGRICULTURE: return "农业"
+		Topic.ECONOMY: return "经济"
+		Topic.EDUCATION: return "教育"
+		Topic.NONE: return "无"
+	return "?"
+
+## 广告类型名称
+static func ad_name(t: AdType) -> String:
+	match t:
+		AdType.RECORD_REPORT: return "执政报告"
+		AdType.POLICY_BLUEPRINT: return "施政蓝图"
+		AdType.TOUCHING_STORY: return "感人故事"
+		AdType.INVESTIGATION: return "调查报告"
+		AdType.EMPTY_CHECK: return "空头支票"
+		AdType.CAMPAIGN_SPEECH: return "竞选演说"
+		AdType.COMPARISON_AD: return "对比广告"
+		AdType.SCANDAL_COMBO: return "丑闻连环锤"
+		AdType.FEAR_AD: return "恐惧广告"
+		AdType.POPULIST_RALLY: return "民粹煽动"
+	return "?"
+
+## 品质星号
+static func quality_stars(q: int) -> String:
+	match q:
+		1: return "★"
+		2: return "★★"
+		3: return "★★★"
+	return "?"
