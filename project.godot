@@ -11,14 +11,14 @@ config_version=5
 [application]
 
 config/name="StockLegend"
-run/main_scene="res://Scenes/test_v4.tscn"
+run/main_scene="res://Scenes/game_v5.tscn"
 config/features=PackedStringArray("4.4", "Forward Plus")
 config/icon="res://icon.svg"
 
 [autoload]
 
 GameBus="*res://Scripts/autoload/game_bus.gd"
-ElectionManager="*res://Scripts/systems/election_manager.gd"
+BoardManager="*res://Scripts/systems/board_manager.gd"
 CardSystem="*res://Scripts/systems/card_system.gd"
 ItemContainerSystem="*res://addons/ContainerSystem/core/ContainerSystem.gd"
 TagManager="*res://addons/ContainerSystem/core/TagManager.gd"

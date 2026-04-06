@@ -7,7 +7,12 @@
       "WebSearch",
       "Bash(cd:*)",
       "Bash(find Scripts -name \"*.uid\" -delete)",
-      "Bash(rm -f Scenes/test_turn.tscn Scenes/test_v2.tscn)"
+      "Bash(rm -f Scenes/test_turn.tscn Scenes/test_v2.tscn)",
+      "WebFetch(domain:www.bilibili.com)",
+      "WebFetch(domain:m.bilibili.com)",
+      "WebFetch(domain:store.steampowered.com)",
+      "WebFetch(domain:www.gamersky.com)",
+      "WebFetch(domain:popsoft.com)"
     ]
   }
 }

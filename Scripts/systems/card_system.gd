@@ -1,17 +1,14 @@
-## 卡牌系统：管理素材牌堆和抽牌。
+## 卡牌系统：管理牌堆和抽牌。
 ## 作为 AutoLoad 单例运行。
 extends Node
 
-## 牌堆（抽牌来源）
-var _deck: Array[MaterialCardDef] = []
-## 弃牌堆
-var _discard: Array[MaterialCardDef] = []
+var _deck: Array[CardDef] = []
+var _discard: Array[CardDef] = []
 
 
 # ─── 初始化 ───
 
-## 用卡牌数组初始化牌堆
-func setup_deck(card_pool: Array[MaterialCardDef]) -> void:
+func setup_deck(card_pool: Array[CardDef]) -> void:
 	_deck.clear()
 	_discard.clear()
 	_deck = card_pool.duplicate()
@@ -32,9 +29,8 @@ func get_discard_size() -> int:
 
 # ─── 抽牌 ───
 
-## 抽取指定数量的牌。牌堆空时自动洗入弃牌堆。
-func draw_cards(count: int) -> Array[MaterialCardDef]:
-	var drawn: Array[MaterialCardDef] = []
+func draw_cards(count: int) -> Array[CardDef]:
+	var drawn: Array[CardDef] = []
 	for i in count:
 		if _deck.is_empty():
 			_reshuffle_discard()
@@ -44,16 +40,14 @@ func draw_cards(count: int) -> Array[MaterialCardDef]:
 	return drawn
 
 
-## 为玩家抽牌并加入手牌
-func draw_for_player(state: PlayerState, count: int) -> Array[MaterialCardDef]:
+func draw_for_player(state: PlayerState, count: int) -> Array[CardDef]:
 	var cards := draw_cards(count)
 	for card in cards:
 		state.hand.append(card)
 	return cards
 
 
-## 将牌放入弃牌堆
-func discard(cards: Array[MaterialCardDef]) -> void:
+func discard(cards: Array[CardDef]) -> void:
 	_discard.append_array(cards)
 
 

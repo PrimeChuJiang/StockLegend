@@ -11,49 +11,53 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-StockLegend is a turn-based card game built with **Godot 4.4** (GDScript). The project implements a pure-logic card game framework with no UI layer yet.
+竞选大师 v5 — 政治竞选主题的卡牌涂地游戏，使用 **Godot 4.4** (GDScript) 开发。核心玩法：2~4张卡牌叠放合成形状，重叠部分涂地生效，争夺 10×10 格子棋盘。
 
 ## Running the Project
 
 - **Engine**: Godot 4.4 stable (Forward Plus renderer)
-- **Test scene**: Run `scenes/test_battle.tscn` to execute a full turn simulation — check the Output panel for logs
+- **Test scene**: Run `Scenes/test_v5.tscn` to execute AI auto-play — check the Output panel for logs
 - No build step required; open project in Godot editor and press F5/F6
 
 ## Architecture
 
-Three-layer architecture with strict separation:
+Three-layer architecture:
 
-### Data Layer (`src/data/`)
-Immutable card definitions as Godot `Resource` classes. `CardDef` and `EffectDef` are templates — never mutated at runtime. `Enums` holds all shared enumerations (CardType, Phase, StatKey, ModifierOp, TargetType, EffectTrigger, Zone).
+### Data Layer (`Scripts/data/`)
+- `Enums` — CellOwner 枚举（NEUTRAL/PLAYER_A/PLAYER_B）
+- `CardShape` (Resource) — 卡牌形状模板，`cells: Array[Vector2i]` 存储格子偏移，支持旋转
+- `CardDef` (Resource) — 卡牌定义（形状 + effect_id 预留接口）
 
-### Runtime Layer (`src/runtime/`)
-Mutable game state. `CardBase` (extends `RefCounted`) is the base class for all runtime card instances, with subclasses `NormalCard`, `InstantCard`, and `FieldCard` that override `can_play_at_phase()` and `execute()`. Use the factory `CardBase.create_from_def(card_def)` to instantiate — never construct subclasses directly. `Modifier` applies temporary/permanent stat changes to cards; `get_stat()` computes final values by layering modifiers (ADD → MULTIPLY → SET priority).
+### Runtime Layer (`Scripts/runtime/`)
+- `PlayerState` (RefCounted) — 玩家状态（hand, AP, hand_limit=5）
 
-### Systems Layer (`src/systems/`)
-Game logic nodes added to the scene tree. `TurnSystem` drives a configurable phase sequence (TURN_START → DRAW → MAIN → TURN_END → CLEANUP) with `insert_phase_before/after()` for extensibility. `ZoneManager` tracks cards across zones (DECK, HAND, FIELD, DISCARD, EXHAUST). `EffectResolver` maps `effect_id` StringNames to Callable handlers via a registry — register new effects with `register_effect()`. `TargetSelector` provides a `select_callback` hook for UI-driven target selection (defaults to auto-select).
+### Systems Layer (`Scripts/systems/`)
+- `BoardManager` (AutoLoad) — 10×10 格子管理，`apply_power()` 处理单格结算
+- `ShapeResolver` (静态工具类) — 形状叠放计算，`resolve_article()` 执行完整涂地操作
+- `CardSystem` (AutoLoad) — 牌堆/弃牌堆管理
 
-### Signal Bus (`src/autoload/game_bus.gd`)
-`GameBus` is an AutoLoad singleton. All inter-system communication goes through its signals — systems never reference each other directly. Key signals: `turn_started/ended`, `phase_started/ended`, `card_played`, `card_zone_changed`, `damage_dealt`, `modifier_added/removed`, `main_phase_entered/finished`.
+### Signal Bus (`Scripts/autoload/game_bus.gd`)
+`GameBus` AutoLoad 单例。信号：`turn_started/ended`, `article_published`, `game_ended`
 
 ## Key Patterns
 
-- **Context Dictionary**: `TurnSystem._build_context()` creates a `{zone_manager, effect_resolver, turn_system}` dict passed to `card.execute(ctx)` — this is how cards access systems without coupling
-- **Card play flow**: `TurnSystem.play_card()` checks `can_play_at_phase()` → checks energy cost → calls `card.execute(ctx)` (polymorphic dispatch) → emits `card_played`
-- **Field card turn-end**: `TurnSystem._resolve_field_effects()` iterates field zone cards and resolves `ON_TURN_END` effects; always iterate a `.duplicate()` of zone arrays to avoid mutation during iteration
-- **Modifier lifecycle**: Applied via `add_modifier()` → ticked each CLEANUP phase via `tick_modifiers()` → auto-removed when `duration` reaches 0
+- **CardPlacement**: `ShapeResolver.CardPlacement` 封装单张卡的放置信息（卡牌、旋转、偏移）
+- **发表文章流程**: 选卡 → 旋转/叠放 → `compute_overlap()` → `compute_power_map(威力=层数-1)` → `resolve_article()` 逐格应用
+- **格子结算**: 中立→翻色 | 己方→加固 | 敌方→削忠诚度，归零翻色
+- **Power Modifier**: `resolve_article()` 接受 `Callable` 参数，特殊卡牌可修改威力计算
 
-## Card Type Behavior
+## AutoLoad Singletons
 
-| Type | Play Timing | execute() Behavior |
-|------|------------|-------------------|
-| NormalCard | MAIN phase only | Resolve ON_PLAY → move to DISCARD |
-| InstantCard | Any phase | Resolve ON_PLAY → move to DISCARD |
-| FieldCard | MAIN phase only | Move to FIELD → resolve ON_FIELD_ENTER (ON_TURN_END resolved by TurnSystem) |
+| Name | File | Purpose |
+|------|------|---------|
+| GameBus | Scripts/autoload/game_bus.gd | Signal bus |
+| BoardManager | Scripts/systems/board_manager.gd | Grid state |
+| CardSystem | Scripts/systems/card_system.gd | Deck management |
 
 ## GDScript Conventions
 
 - Use tabs for indentation (Godot standard)
 - All custom classes use `class_name` for global registration
 - Data classes extend `Resource`; runtime objects extend `RefCounted`; system nodes extend `Node`
-- Use `&"string_name"` syntax for StringName literals (effect IDs, card IDs)
+- Use `&"string_name"` syntax for StringName literals
 - Prefix private members/methods with `_`

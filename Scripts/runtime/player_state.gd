@@ -1,18 +1,18 @@
-## 玩家运行时状态 v4：竞选大师
+## 玩家运行时状态 v5：竞选大师
 class_name PlayerState
 extends RefCounted
 
-var player_id: StringName
+var player_id: int  ## Enums.CellOwner.PLAYER_A 或 PLAYER_B
 var player_name: String
 var action_points: int = 3
 var max_action_points: int = 3
-var hand: Array[MaterialCardDef] = []
-var hand_limit: int = 10
+var hand: Array[CardDef] = []
+var hand_limit: int = 5
 
 
-func _init(id: StringName, p_name: String = "") -> void:
+func _init(id: int, p_name: String = "") -> void:
 	player_id = id
-	player_name = p_name if p_name != "" else String(id)
+	player_name = p_name if p_name != "" else Enums.owner_name(id as Enums.CellOwner)
 
 
 func reset_turn() -> void:
@@ -31,8 +31,8 @@ func spend_ap(cost: int) -> bool:
 
 
 ## 移除指定下标的手牌，返回被移除的牌
-func remove_cards(indices: Array[int]) -> Array[MaterialCardDef]:
-	var removed: Array[MaterialCardDef] = []
+func remove_cards(indices: Array[int]) -> Array[CardDef]:
+	var removed: Array[CardDef] = []
 	var sorted := indices.duplicate()
 	sorted.sort()
 	sorted.reverse()
@@ -43,9 +43,9 @@ func remove_cards(indices: Array[int]) -> Array[MaterialCardDef]:
 	return removed
 
 
-## 超出手牌上限时弃牌
-func discard_to_limit() -> Array[MaterialCardDef]:
-	var discarded: Array[MaterialCardDef] = []
+## 超出手牌上限时弃牌（从末尾弃）
+func discard_to_limit() -> Array[CardDef]:
+	var discarded: Array[CardDef] = []
 	while hand.size() > hand_limit:
 		discarded.append(hand.pop_back())
 	return discarded
