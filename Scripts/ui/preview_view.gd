@@ -212,16 +212,17 @@ func _refresh_overlap() -> void:
 ## 对 power_map 整体旋转 N 次 90°CW，并归一化到左上角 (0,0)
 ## 这样玩家按 Q 旋转整体图案后，放到棋盘上的坐标也是正确旋转后的
 static func _apply_rotation(pmap: Dictionary, steps: int) -> Dictionary:
-	if pmap.is_empty() or steps % 4 == 0:
+	if pmap.is_empty():
 		return pmap.duplicate()
 	var result := pmap.duplicate()
+	# 旋转（0次则跳过）
 	for _s in steps % 4:
 		var rotated := {}
 		for pos: Vector2i in result:
 			# 90° CW: (x, y) -> (y, -x)
 			rotated[Vector2i(pos.y, -pos.x)] = result[pos]
 		result = rotated
-	# 归一化
+	# 归一化：无论是否旋转，都确保左上角对齐到 (0,0)
 	var min_x := 999
 	var min_y := 999
 	for pos: Vector2i in result:
