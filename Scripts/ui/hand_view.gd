@@ -1,23 +1,26 @@
-## 手牌视图：显示手牌和选择交互
+## 手牌视图：显示玩家手牌并处理选牌交互
+## 使用 HBoxContainer 水平排列卡牌面板，每张牌是一个 Panel + Label + 形状缩略图。
+## 点击切换选中状态（最多选4张），选中变化时发送 selection_changed 信号。
 class_name HandView
 extends HBoxContainer
 
-signal selection_changed(selected_indices: Array[int])
+signal selection_changed(selected_indices: Array[int])  ## 选中的卡牌下标列表变化时触发
 
-const CARD_WIDTH := 70
-const CARD_HEIGHT := 80
-const CARD_CELL_SIZE := 10
+const CARD_WIDTH := 70       ## 单张卡牌面板宽度
+const CARD_HEIGHT := 80      ## 单张卡牌面板高度
+const CARD_CELL_SIZE := 10   ## 形状缩略图中每个小方块的像素大小
 
-const COLOR_NORMAL := Color(0.3, 0.3, 0.35)
-const COLOR_SELECTED := Color(0.3, 0.5, 0.8)
-const COLOR_DISABLED := Color(0.2, 0.2, 0.2, 0.5)
+const COLOR_NORMAL := Color(0.3, 0.3, 0.35)       ## 未选中卡牌底色
+const COLOR_SELECTED := Color(0.3, 0.5, 0.8)      ## 选中卡牌底色（蓝色高亮）
+const COLOR_DISABLED := Color(0.2, 0.2, 0.2, 0.5) ## 禁用状态底色（AI回合时）
 
-var _cards: Array[CardDef] = []
-var _selected: Array[bool] = []
-var _rotations: Array[int] = []  ## 每张卡的旋转状态
-var _enabled := true
+var _cards: Array[CardDef] = []     ## 当前手牌数据
+var _selected: Array[bool] = []     ## 每张牌的选中状态
+var _rotations: Array[int] = []     ## 每张牌的旋转步数（0-3）
+var _enabled := true                ## 是否允许交互（AI回合时禁用）
 
 
+## 刷新手牌数据（抽牌/使用后调用），重置所有选中和旋转状态
 func update_hand(cards: Array[CardDef]) -> void:
 	_cards = cards.duplicate()
 	_selected.clear()
@@ -28,6 +31,7 @@ func update_hand(cards: Array[CardDef]) -> void:
 	_rebuild_ui()
 
 
+## 返回当前选中的卡牌下标列表
 func get_selected_indices() -> Array[int]:
 	var result: Array[int] = []
 	for i in _selected.size():
@@ -36,6 +40,7 @@ func get_selected_indices() -> Array[int]:
 	return result
 
 
+## 返回当前选中的卡牌数量
 func get_selected_count() -> int:
 	var count := 0
 	for s in _selected:
@@ -44,12 +49,14 @@ func get_selected_count() -> int:
 	return count
 
 
+## 获取指定卡牌的旋转步数
 func get_card_rotation(index: int) -> int:
 	if index >= 0 and index < _rotations.size():
 		return _rotations[index]
 	return 0
 
 
+## 将所有选中的卡牌旋转90°（目前未被 game_ui 直接调用，保留备用）
 func rotate_selected() -> void:
 	for i in _selected.size():
 		if _selected[i]:
@@ -57,6 +64,7 @@ func rotate_selected() -> void:
 	_rebuild_ui()
 
 
+## 清除所有选中状态
 func clear_selection() -> void:
 	for i in _selected.size():
 		_selected[i] = false
@@ -64,17 +72,20 @@ func clear_selection() -> void:
 	selection_changed.emit(get_selected_indices())
 
 
+## 启用/禁用交互（AI回合时禁用，防止玩家误操作）
 func set_enabled(enabled: bool) -> void:
 	_enabled = enabled
 	_rebuild_ui()
 
 
+## 重建整个手牌UI（销毁旧节点，重新创建）
+## 每次手牌数据或选中状态变化时调用
 func _rebuild_ui() -> void:
-	# 清除旧的
+	# 清除旧的子节点
 	for child in get_children():
 		child.queue_free()
 
-	# 安全检查：确保数组长度同步
+	# 安全检查：确保 _selected/_rotations 和 _cards 长度同步
 	while _selected.size() < _cards.size():
 		_selected.append(false)
 		_rotations.append(0)
@@ -145,6 +156,8 @@ func _rebuild_ui() -> void:
 		add_child(panel)
 
 
+## 绘制形状缩略图（在卡牌面板内的 Control 上画小方块）
+## 通过 meta 读取 shape 和 rotation 数据，居中绘制
 func _draw_shape_thumbnail(container: Control) -> void:
 	var shape: CardShape = container.get_meta("shape")
 	var rot: int = container.get_meta("rotation")
@@ -152,14 +165,14 @@ func _draw_shape_thumbnail(container: Control) -> void:
 	if cells.is_empty():
 		return
 
-	# 计算边界
+	# 计算包围盒
 	var max_x := 0
 	var max_y := 0
 	for cell in cells:
 		max_x = maxi(max_x, cell.x)
 		max_y = maxi(max_y, cell.y)
 
-	# 居中偏移
+	# 居中偏移（让形状在容器内居中显示）
 	var shape_w := (max_x + 1) * CARD_CELL_SIZE
 	var shape_h := (max_y + 1) * CARD_CELL_SIZE
 	var offset := Vector2(
@@ -177,18 +190,17 @@ func _draw_shape_thumbnail(container: Control) -> void:
 		container.draw_rect(rect, Color.WHITE)
 
 
+## 卡牌面板的点击处理：左键切换选中状态（最多4张）
 func _on_card_input(event: InputEvent, index: int) -> void:
 	if not _enabled:
 		return
 	if event is InputEventMouseButton:
 		var mb := event as InputEventMouseButton
 		if mb.pressed and mb.button_index == MOUSE_BUTTON_LEFT:
-			# 切换选中
 			if _selected[index]:
-				_selected[index] = false
+				_selected[index] = false  # 取消选中
 			else:
-				# 最多选4张
 				if get_selected_count() < 4:
-					_selected[index] = true
+					_selected[index] = true  # 选中（上限4张）
 			_rebuild_ui()
 			selection_changed.emit(get_selected_indices())

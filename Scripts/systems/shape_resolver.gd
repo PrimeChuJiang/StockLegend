@@ -1,20 +1,27 @@
 ## 形状叠放解析器 v5：计算重叠和威力
-## 纯静态工具类，不作为 AutoLoad
+## 纯静态工具类，不作为 AutoLoad，所有方法都是 static。
+## 核心职责：将多张卡牌的叠放操作转化为棋盘上的威力值，并执行涂地结算。
+##
+## 处理流水线：
+##   选牌 → CardPlacement（旋转+偏移）→ compute_overlap（层数）
+##   → compute_power_map（威力=层数-1）→ resolve_article（逐格应用到棋盘）
 class_name ShapeResolver
 
 
-## 单张卡牌的放置信息
+## 单张卡牌的放置信息（内部类）
+## 封装了"哪张牌、旋转几次、在叠放空间中偏移多少"
 class CardPlacement:
-	var card_def: CardDef
-	var rotation: int          ## 0-3（0°/90°/180°/270°）
-	var offset: Vector2i       ## 在叠放空间中的偏移位置
+	var card_def: CardDef       ## 使用的卡牌定义
+	var rotation: int           ## 旋转步数 0-3（0°/90°CW/180°/270°CW）
+	var offset: Vector2i        ## 在叠放空间中的偏移（第一张卡通常为原点）
 
 	func _init(p_card: CardDef, p_rotation: int = 0, p_offset: Vector2i = Vector2i.ZERO) -> void:
 		card_def = p_card
 		rotation = p_rotation
 		offset = p_offset
 
-	## 获取此放置在叠放空间中占据的格子列表
+	## 获取此放置在叠放空间中实际占据的格子列表
+	## = 形状旋转后的格子 + 偏移
 	func get_cells() -> Array[Vector2i]:
 		var rotated := card_def.shape.rotated(rotation)
 		var result: Array[Vector2i] = []
@@ -23,7 +30,8 @@ class CardPlacement:
 		return result
 
 
-## 计算多张卡牌叠放后每格的重叠层数
+## ─── 第1步：计算重叠层数 ───
+## 将所有卡牌的格子叠在一起，统计每个坐标被覆盖了几次。
 ## 返回 Dictionary[Vector2i, int]：叠放空间坐标 → 重叠层数
 static func compute_overlap(placements: Array[CardPlacement]) -> Dictionary:
 	var cell_counts := {}
@@ -34,7 +42,9 @@ static func compute_overlap(placements: Array[CardPlacement]) -> Dictionary:
 	return cell_counts
 
 
-## 从重叠层数计算威力值（只保留 ≥2 层的格子，威力 = 层数 - 1）
+## ─── 第2步：重叠层数 → 威力值 ───
+## 规则：只有 ≥2 层的格子才生效，威力 = 层数 - 1
+## 例：2层→威力1，3层→威力2，4层→威力3（最大）
 ## 返回 Dictionary[Vector2i, int]：叠放空间坐标 → 威力值
 static func compute_power_map(overlap: Dictionary) -> Dictionary:
 	var power_map := {}
@@ -45,7 +55,7 @@ static func compute_power_map(overlap: Dictionary) -> Dictionary:
 	return power_map
 
 
-## 验证所有威力格子在棋盘范围内
+## 边界检查：验证 power_map 中所有格子放到棋盘 grid_pos 位置后是否都在范围内
 static func validate_bounds(power_map: Dictionary, grid_pos: Vector2i, width: int = 10, height: int = 10) -> bool:
 	for pos: Vector2i in power_map:
 		var board_pos := pos + grid_pos
@@ -56,13 +66,23 @@ static func validate_bounds(power_map: Dictionary, grid_pos: Vector2i, width: in
 	return true
 
 
-## 执行完整的「发表文章」操作
-## placements: 卡牌放置列表（2~4张）
-## grid_pos: 在棋盘上的投放位置（叠放空间原点对应的棋盘坐标）
-## board: BoardManager 实例
-## player_id: 玩家ID（Enums.CellOwner）
-## power_modifier: 可选的威力修改回调（特殊卡牌用）
-## 返回结果 Dictionary
+## ─── 第3步：执行完整的「发表文章」操作 ───
+## 这是涂地的完整流程：计算重叠 → 计算威力 → 逐格调用 board.apply_power()
+##
+## 参数：
+##   placements    — 卡牌放置列表（2~4张）
+##   grid_pos      — 叠放空间原点对应的棋盘坐标（即投放位置）
+##   board         — BoardManager 实例（通过 AutoLoad 获取）
+##   player_id     — 攻方玩家ID（Enums.CellOwner）
+##   power_modifier — 可选回调 Callable(power_map, placements) -> power_map
+##                    特殊卡牌可通过此接口修改威力（如翻倍、附加效果等）
+##
+## 返回 Dictionary：
+##   cells_affected — 生效格子数
+##   cells_flipped  — 翻色格子数
+##   total_power    — 总威力值
+##   cards_used     — 使用卡牌数
+##   affected_cells — 每格详情数组 [{pos, power, flipped}, ...]
 static func resolve_article(
 	placements: Array[CardPlacement],
 	grid_pos: Vector2i,
@@ -73,7 +93,7 @@ static func resolve_article(
 	var overlap := compute_overlap(placements)
 	var power_map := compute_power_map(overlap)
 
-	# 特殊卡牌效果修改威力（预留接口）
+	# 特殊卡牌效果：通过回调修改 power_map（预留接口，目前无卡使用）
 	if power_modifier.is_valid():
 		power_map = power_modifier.call(power_map, placements)
 
@@ -82,6 +102,7 @@ static func resolve_article(
 	var total_power := 0
 	var affected_cells: Array[Dictionary] = []
 
+	# 逐格应用威力到棋盘
 	for pos: Vector2i in power_map:
 		var board_pos := pos + grid_pos
 		if not board.is_in_bounds(board_pos.x, board_pos.y):

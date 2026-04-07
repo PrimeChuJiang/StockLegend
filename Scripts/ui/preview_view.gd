@@ -1,34 +1,40 @@
 ## 叠放预览视图：显示当前选中卡牌的重叠效果
-## 每张卡用不同颜色显示，重叠部分用特殊颜色标注威力
+## 在一个 10×10 的小网格中可视化多张卡牌叠放后的重叠情况。
+## 功能：
+##   - 每张卡用不同颜色显示各自的覆盖范围
+##   - 重叠部分用绿色/黄色标注威力值数字
+##   - 支持单卡旋转（R键）、单卡移动（WASD）、整体旋转（Q键）
+##   - 当前激活的卡牌边框高亮（Tab切换）
 class_name PreviewView
 extends Control
 
-const CELL_SIZE := 14
-const GRID_SIZE := 10  ## 10×10 预览区
+const CELL_SIZE := 14      ## 预览区每格像素大小（比棋盘小，紧凑显示）
+const GRID_SIZE := 10      ## 预览区网格尺寸（10×10）
 
-const COLOR_BG := Color(0.15, 0.15, 0.15)
-const COLOR_SINGLE := Color(0.4, 0.4, 0.4, 0.5)
-const COLOR_OVERLAP_1 := Color(0.3, 0.7, 0.3)
-const COLOR_OVERLAP_2 := Color(0.5, 0.8, 0.3)
-const COLOR_OVERLAP_3 := Color(0.8, 0.9, 0.2)
+## ─── 预览区配色 ───
+const COLOR_BG := Color(0.15, 0.15, 0.15)          ## 背景色
+const COLOR_SINGLE := Color(0.4, 0.4, 0.4, 0.5)    ## （预留）单层格子色
+const COLOR_OVERLAP_1 := Color(0.3, 0.7, 0.3)       ## 威力1（2层重叠）绿色
+const COLOR_OVERLAP_2 := Color(0.5, 0.8, 0.3)       ## 威力2（3层重叠）黄绿色
+const COLOR_OVERLAP_3 := Color(0.8, 0.9, 0.2)       ## 威力3（4层重叠）亮黄色
 
-## 每张卡的独立颜色（用于区分哪张卡在哪里）
+## 每张卡的独立颜色（最多4张，用于区分哪张卡占了哪些格子）
 const CARD_COLORS: Array[Color] = [
-	Color(0.3, 0.5, 0.8, 0.6),
-	Color(0.8, 0.4, 0.3, 0.6),
-	Color(0.3, 0.7, 0.4, 0.6),
-	Color(0.7, 0.5, 0.8, 0.6),
+	Color(0.3, 0.5, 0.8, 0.6),   # 卡1：蓝
+	Color(0.8, 0.4, 0.3, 0.6),   # 卡2：红
+	Color(0.3, 0.7, 0.4, 0.6),   # 卡3：绿
+	Color(0.7, 0.5, 0.8, 0.6),   # 卡4：紫
 ]
 
-var _placements: Array[ShapeResolver.CardPlacement] = []
-var _overlap: Dictionary = {}
-var _power_map: Dictionary = {}       ## 原始 power_map
-var _rotated_power_map: Dictionary = {} ## 整体旋转后的 power_map
-var _composite_rotation := 0          ## 整体旋转次数 (0-3)
-var _display_offset := Vector2i.ZERO  ## 居中用
-var _active_card_index := -1          ## 当前正在调整偏移的卡牌索引
+var _placements: Array[ShapeResolver.CardPlacement] = []  ## 当前叠放的卡牌列表
+var _overlap: Dictionary = {}           ## 重叠层数 {Vector2i → int}
+var _power_map: Dictionary = {}         ## 原始威力图 {Vector2i → int}（仅≥2层的格子）
+var _rotated_power_map: Dictionary = {} ## 整体旋转后的威力图（用于实际放到棋盘上）
+var _composite_rotation := 0            ## 整体旋转次数 (0-3)，Q键递增
+var _display_offset := Vector2i.ZERO    ## 显示偏移（让叠放图案居中在预览区）
+var _active_card_index := -1            ## 当前激活卡牌的索引（WASD移动、R旋转的目标）
 
-signal placements_changed()
+signal placements_changed()  ## 叠放状态变化时触发（通知 game_ui 刷新棋盘预览）
 
 
 func _ready() -> void:
@@ -108,6 +114,7 @@ func _draw_hint(text: String) -> void:
 	draw_string(font, center, text, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Color(0.5, 0.5, 0.5))
 
 
+## 更新预览：传入新的卡牌放置列表（选牌变化时由 game_ui 调用）
 func update_preview(placements: Array[ShapeResolver.CardPlacement]) -> void:
 	_placements = placements
 
@@ -118,13 +125,14 @@ func update_preview(placements: Array[ShapeResolver.CardPlacement]) -> void:
 		queue_redraw()
 		return
 
-	# 默认激活第二张卡（第一张固定在原点，移动后面的）
+	# 默认激活第二张卡（第一张固定在原点，玩家通常移动后面的卡来调整重叠）
 	if _active_card_index < 0 or _active_card_index >= _placements.size():
 		_active_card_index = mini(1, _placements.size() - 1)
 
 	_recalculate()
 
 
+## 重新计算重叠、威力、旋转、显示偏移，然后触发重绘
 func _recalculate() -> void:
 	_overlap = ShapeResolver.compute_overlap(_placements)
 	_power_map = ShapeResolver.compute_power_map(_overlap)
@@ -133,12 +141,13 @@ func _recalculate() -> void:
 	queue_redraw()
 
 
+## 计算显示偏移，使所有卡牌的组合图案在预览区居中
 func _compute_display_offset() -> void:
 	if _overlap.is_empty() and _placements.is_empty():
 		_display_offset = Vector2i.ZERO
 		return
 
-	# 收集所有格子
+	# 收集所有卡牌的所有格子坐标
 	var all_cells: Array[Vector2i] = []
 	for placement in _placements:
 		all_cells.append_array(placement.get_cells())
@@ -147,6 +156,7 @@ func _compute_display_offset() -> void:
 		_display_offset = Vector2i.ZERO
 		return
 
+	# 找包围盒
 	var min_pos := all_cells[0]
 	var max_pos := all_cells[0]
 	for cell in all_cells:
@@ -155,6 +165,7 @@ func _compute_display_offset() -> void:
 		max_pos.x = maxi(max_pos.x, cell.x)
 		max_pos.y = maxi(max_pos.y, cell.y)
 
+	# 居中：让包围盒中心对齐预览区中心
 	var shape_size := max_pos - min_pos + Vector2i.ONE
 	_display_offset = Vector2i(
 		(GRID_SIZE - shape_size.x) / 2 - min_pos.x,
@@ -199,6 +210,7 @@ func _refresh_overlap() -> void:
 
 
 ## 对 power_map 整体旋转 N 次 90°CW，并归一化到左上角 (0,0)
+## 这样玩家按 Q 旋转整体图案后，放到棋盘上的坐标也是正确旋转后的
 static func _apply_rotation(pmap: Dictionary, steps: int) -> Dictionary:
 	if pmap.is_empty() or steps % 4 == 0:
 		return pmap.duplicate()
